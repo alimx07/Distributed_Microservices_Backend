@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"os"
 	"regexp"
@@ -8,21 +9,25 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func LoadConfig() (*Config, error) {
+func LoadConfig() (Config, error) {
 	if err := godotenv.Load(".env"); err != nil {
-		return nil, err
+		return Config{}, err
 	}
-	config := &Config{
+	config := Config{
 		DBHost:     os.Getenv("DB_HOST"),
 		DBPort:     os.Getenv("DB_PORT"),
 		DBUser:     os.Getenv("DB_USER"),
 		DBPassword: os.Getenv("DB_PASSWORD"),
 		DBName:     os.Getenv("DB_NAME"),
-		JWTSecret:  os.Getenv("JWT_SECRET"),
-		// JWTExpiration: os.Getenv("JWT_EXPIRATION"),
 		ServerPort: os.Getenv("SERVER_PORT"),
 		ServerHost: os.Getenv("SERVER_HOST"),
 	}
+	prv64 := os.Getenv("JWT_PRIVATE_KEY")
+	prvBytes, err := base64.StdEncoding.DecodeString(prv64)
+	if err != nil {
+		return Config{}, errors.New("failed intialization of config")
+	}
+	config.JWTSecret = prvBytes
 	return config, nil
 }
 

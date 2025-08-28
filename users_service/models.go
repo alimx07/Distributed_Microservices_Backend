@@ -18,7 +18,7 @@ type Config struct {
 	DBPassword string
 	DBName     string
 
-	JWTSecret string
+	JWTSecret []byte
 	// JWTExpiration string
 
 	ServerHost string

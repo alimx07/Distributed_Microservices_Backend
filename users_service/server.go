@@ -1,7 +1,5 @@
 package main
 
-
-
 import (
 	"context"
 	"log"
@@ -41,6 +39,7 @@ func (s *UserServer) start() error {
 	pb.RegisterUserServiceServer(grpcserver, s)
 	return grpcserver.Serve(listener)
 }
+
 func (s *UserServer) Register(ctx context.Context, rreq *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	log.Printf("Register called for email: %s", rreq.GetEmail())
 	user := User{
@@ -81,12 +80,15 @@ func (s *UserServer) Login(ctx context.Context, lreq *pb.LoginRequest) (*pb.Logi
 	if err := bcrypt.CompareHashAndPassword([]byte(userData.Password), []byte(user.Password)); err != nil {
 		return nil, status.Error(codes.Unauthenticated, "Invalid Credintionals")
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": user.UserID,
-		"exp":     time.Now().Add(time.Hour * 1).Unix(),
+
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, jwt.MapClaims{
+		"iss": "users_service", // mock Issuer
+		"sub": user.UserID,
+		"exp": time.Now().Add(time.Hour * 1).Unix(),
+		"aud": []string{"api_gateway"}, // mock audiance
 	})
 
-	tokenString, _ := token.SignedString([]byte(s.config.JWTSecret))
+	tokenString, _ := token.SignedString(s.config.JWTSecret)
 	return &pb.LoginResponse{
 		Token: tokenString,
 	}, nil

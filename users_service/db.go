@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func InitDB(config *Config) *sql.DB {
+func InitDB(config Config) *sql.DB {
 	DBpath := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		config.DBHost, config.DBPort, config.DBUser, config.DBPassword, config.DBName)
 	DB, err := sql.Open("postgres", DBpath)

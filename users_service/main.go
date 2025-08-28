@@ -12,8 +12,7 @@ func main() {
 	}
 	db := InitDB(config)
 	UserRepo := NewUserRepo(db)
-	server := NewUserServer(UserRepo, *config)
+	server := NewUserServer(UserRepo, config)
 
-	log.Printf("Users service is running on %s:%s...", config.ServerHost, config.ServerPort)
 	log.Fatal(server.start())
 }
