@@ -23,8 +23,8 @@ const (
 
 type KPostCreated struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        int32                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
 	CreatedAt     int64                  `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -61,18 +61,18 @@ func (*KPostCreated) Descriptor() ([]byte, []int) {
 	return file_kafka_posts_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *KPostCreated) GetId() string {
+func (x *KPostCreated) GetId() int64 {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return 0
 }
 
-func (x *KPostCreated) GetUserId() string {
+func (x *KPostCreated) GetUserId() int32 {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return 0
 }
 
 func (x *KPostCreated) GetContent() string {
@@ -143,7 +143,7 @@ func (x *CreatePostEvent) GetPost() *KPostCreated {
 
 type KPostDeleted struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -178,7 +178,7 @@ func (*KPostDeleted) Descriptor() ([]byte, []int) {
 	return file_kafka_posts_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *KPostDeleted) GetId() int32 {
+func (x *KPostDeleted) GetId() int64 {
 	if x != nil {
 		return x.Id
 	}
@@ -683,8 +683,8 @@ const file_kafka_posts_proto_rawDesc = "" +
 	"\n" +
 	"\x11kafka_posts.proto\"p\n" +
 	"\fKPostCreated\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x05R\x06userId\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x04 \x01(\x03R\tcreatedAt\"F\n" +
@@ -692,7 +692,7 @@ const file_kafka_posts_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\x03R\x03key\x12!\n" +
 	"\x04post\x18\x02 \x01(\v2\r.KPostCreatedR\x04post\"\x1e\n" +
 	"\fKPostDeleted\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x05R\x02id\"F\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\"F\n" +
 	"\x0fDeletePostEvent\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\x03R\x03key\x12!\n" +
 	"\x04post\x18\x02 \x01(\v2\r.KPostDeletedR\x04post\"\x8c\x01\n" +

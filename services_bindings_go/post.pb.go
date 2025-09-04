@@ -75,7 +75,7 @@ func (x *Post) GetContent() string {
 
 type Comment struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        int32                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
+	PostId        int64                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
 	UserId        int32                  `protobuf:"varint,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	Comment       string                 `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -112,7 +112,7 @@ func (*Comment) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Comment) GetPostId() int32 {
+func (x *Comment) GetPostId() int64 {
 	if x != nil {
 		return x.PostId
 	}
@@ -135,7 +135,7 @@ func (x *Comment) GetComment() string {
 
 type Like struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        int32                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
+	PostId        int64                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
 	UserId        int32                  `protobuf:"varint,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -171,7 +171,7 @@ func (*Like) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Like) GetPostId() int32 {
+func (x *Like) GetPostId() int64 {
 	if x != nil {
 		return x.PostId
 	}
@@ -187,7 +187,8 @@ func (x *Like) GetUserId() int32 {
 
 type Delete struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int32                  `protobuf:"varint,1,opt,name=Id,proto3" json:"Id,omitempty"`
+	Id            int64                  `protobuf:"varint,1,opt,name=Id,proto3" json:"Id,omitempty"`
+	UserId        int32                  `protobuf:"varint,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -222,9 +223,16 @@ func (*Delete) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *Delete) GetId() int32 {
+func (x *Delete) GetId() int64 {
 	if x != nil {
 		return x.Id
+	}
+	return 0
+}
+
+func (x *Delete) GetUserId() int32 {
+	if x != nil {
+		return x.UserId
 	}
 	return 0
 }
@@ -283,14 +291,15 @@ const file_post_proto_rawDesc = "" +
 	"\x06UserId\x18\x01 \x01(\x05R\x06UserId\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\"S\n" +
 	"\aComment\x12\x16\n" +
-	"\x06PostId\x18\x01 \x01(\x05R\x06PostId\x12\x16\n" +
+	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\x12\x16\n" +
 	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\x12\x18\n" +
 	"\acomment\x18\x03 \x01(\tR\acomment\"6\n" +
 	"\x04Like\x12\x16\n" +
-	"\x06PostId\x18\x01 \x01(\x05R\x06PostId\x12\x16\n" +
-	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\"\x18\n" +
+	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\x12\x16\n" +
+	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\"0\n" +
 	"\x06Delete\x12\x0e\n" +
-	"\x02Id\x18\x01 \x01(\x05R\x02Id\"$\n" +
+	"\x02Id\x18\x01 \x01(\x03R\x02Id\x12\x16\n" +
+	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\"$\n" +
 	"\bResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage2\xe7\x01\n" +
 	"\n" +
