@@ -21,32 +21,30 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Post struct {
+type KPostCreated struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
-	LikesCount    int64                  `protobuf:"varint,4,opt,name=likes_count,json=likesCount,proto3" json:"likes_count,omitempty"`
-	CommentsCount int64                  `protobuf:"varint,5,opt,name=comments_count,json=commentsCount,proto3" json:"comments_count,omitempty"`
-	CreatedAt     int64                  `protobuf:"varint,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Post) Reset() {
-	*x = Post{}
+func (x *KPostCreated) Reset() {
+	*x = KPostCreated{}
 	mi := &file_kafka_posts_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Post) String() string {
+func (x *KPostCreated) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Post) ProtoMessage() {}
+func (*KPostCreated) ProtoMessage() {}
 
-func (x *Post) ProtoReflect() protoreflect.Message {
+func (x *KPostCreated) ProtoReflect() protoreflect.Message {
 	mi := &file_kafka_posts_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -58,78 +56,61 @@ func (x *Post) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Post.ProtoReflect.Descriptor instead.
-func (*Post) Descriptor() ([]byte, []int) {
+// Deprecated: Use KPostCreated.ProtoReflect.Descriptor instead.
+func (*KPostCreated) Descriptor() ([]byte, []int) {
 	return file_kafka_posts_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Post) GetId() string {
+func (x *KPostCreated) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *Post) GetUserId() string {
+func (x *KPostCreated) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
 	return ""
 }
 
-func (x *Post) GetContent() string {
+func (x *KPostCreated) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
 	return ""
 }
 
-func (x *Post) GetLikesCount() int64 {
-	if x != nil {
-		return x.LikesCount
-	}
-	return 0
-}
-
-func (x *Post) GetCommentsCount() int64 {
-	if x != nil {
-		return x.CommentsCount
-	}
-	return 0
-}
-
-func (x *Post) GetCreatedAt() int64 {
+func (x *KPostCreated) GetCreatedAt() int64 {
 	if x != nil {
 		return x.CreatedAt
 	}
 	return 0
 }
 
-type PostEvent struct {
+type CreatePostEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	EventId       string                 `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
-	EventType     string                 `protobuf:"bytes,2,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
-	OccuredAt     int64                  `protobuf:"varint,3,opt,name=occured_at,json=occuredAt,proto3" json:"occured_at,omitempty"`
-	Source        string                 `protobuf:"bytes,4,opt,name=source,proto3" json:"source,omitempty"`
-	Post          *Post                  `protobuf:"bytes,5,opt,name=post,proto3" json:"post,omitempty"`
+	Key           int64                  `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
+	Post          *KPostCreated          `protobuf:"bytes,2,opt,name=post,proto3" json:"post,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PostEvent) Reset() {
-	*x = PostEvent{}
+func (x *CreatePostEvent) Reset() {
+	*x = CreatePostEvent{}
 	mi := &file_kafka_posts_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PostEvent) String() string {
+func (x *CreatePostEvent) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PostEvent) ProtoMessage() {}
+func (*CreatePostEvent) ProtoMessage() {}
 
-func (x *PostEvent) ProtoReflect() protoreflect.Message {
+func (x *CreatePostEvent) ProtoReflect() protoreflect.Message {
 	mi := &file_kafka_posts_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -141,42 +122,557 @@ func (x *PostEvent) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PostEvent.ProtoReflect.Descriptor instead.
-func (*PostEvent) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreatePostEvent.ProtoReflect.Descriptor instead.
+func (*CreatePostEvent) Descriptor() ([]byte, []int) {
 	return file_kafka_posts_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *PostEvent) GetEventId() string {
+func (x *CreatePostEvent) GetKey() int64 {
 	if x != nil {
-		return x.EventId
-	}
-	return ""
-}
-
-func (x *PostEvent) GetEventType() string {
-	if x != nil {
-		return x.EventType
-	}
-	return ""
-}
-
-func (x *PostEvent) GetOccuredAt() int64 {
-	if x != nil {
-		return x.OccuredAt
+		return x.Key
 	}
 	return 0
 }
 
-func (x *PostEvent) GetSource() string {
+func (x *CreatePostEvent) GetPost() *KPostCreated {
 	if x != nil {
-		return x.Source
+		return x.Post
+	}
+	return nil
+}
+
+type KPostDeleted struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KPostDeleted) Reset() {
+	*x = KPostDeleted{}
+	mi := &file_kafka_posts_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KPostDeleted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KPostDeleted) ProtoMessage() {}
+
+func (x *KPostDeleted) ProtoReflect() protoreflect.Message {
+	mi := &file_kafka_posts_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KPostDeleted.ProtoReflect.Descriptor instead.
+func (*KPostDeleted) Descriptor() ([]byte, []int) {
+	return file_kafka_posts_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *KPostDeleted) GetId() string {
+	if x != nil {
+		return x.Id
 	}
 	return ""
 }
 
-func (x *PostEvent) GetPost() *Post {
+type DeletePostEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           int64                  `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
+	Post          *KPostDeleted          `protobuf:"bytes,2,opt,name=post,proto3" json:"post,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeletePostEvent) Reset() {
+	*x = DeletePostEvent{}
+	mi := &file_kafka_posts_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeletePostEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeletePostEvent) ProtoMessage() {}
+
+func (x *DeletePostEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_kafka_posts_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeletePostEvent.ProtoReflect.Descriptor instead.
+func (*DeletePostEvent) Descriptor() ([]byte, []int) {
+	return file_kafka_posts_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *DeletePostEvent) GetKey() int64 {
+	if x != nil {
+		return x.Key
+	}
+	return 0
+}
+
+func (x *DeletePostEvent) GetPost() *KPostDeleted {
 	if x != nil {
 		return x.Post
+	}
+	return nil
+}
+
+type KCommentCreated struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        int32                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	PostId        int32                  `protobuf:"varint,3,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KCommentCreated) Reset() {
+	*x = KCommentCreated{}
+	mi := &file_kafka_posts_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KCommentCreated) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KCommentCreated) ProtoMessage() {}
+
+func (x *KCommentCreated) ProtoReflect() protoreflect.Message {
+	mi := &file_kafka_posts_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KCommentCreated.ProtoReflect.Descriptor instead.
+func (*KCommentCreated) Descriptor() ([]byte, []int) {
+	return file_kafka_posts_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *KCommentCreated) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *KCommentCreated) GetUserId() int32 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *KCommentCreated) GetPostId() int32 {
+	if x != nil {
+		return x.PostId
+	}
+	return 0
+}
+
+func (x *KCommentCreated) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *KCommentCreated) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+type CreateCommentEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           int64                  `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
+	Comment       *KCommentCreated       `protobuf:"bytes,2,opt,name=comment,proto3" json:"comment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCommentEvent) Reset() {
+	*x = CreateCommentEvent{}
+	mi := &file_kafka_posts_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCommentEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCommentEvent) ProtoMessage() {}
+
+func (x *CreateCommentEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_kafka_posts_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCommentEvent.ProtoReflect.Descriptor instead.
+func (*CreateCommentEvent) Descriptor() ([]byte, []int) {
+	return file_kafka_posts_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CreateCommentEvent) GetKey() int64 {
+	if x != nil {
+		return x.Key
+	}
+	return 0
+}
+
+func (x *CreateCommentEvent) GetComment() *KCommentCreated {
+	if x != nil {
+		return x.Comment
+	}
+	return nil
+}
+
+type KCommentDeleted struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KCommentDeleted) Reset() {
+	*x = KCommentDeleted{}
+	mi := &file_kafka_posts_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KCommentDeleted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KCommentDeleted) ProtoMessage() {}
+
+func (x *KCommentDeleted) ProtoReflect() protoreflect.Message {
+	mi := &file_kafka_posts_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KCommentDeleted.ProtoReflect.Descriptor instead.
+func (*KCommentDeleted) Descriptor() ([]byte, []int) {
+	return file_kafka_posts_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *KCommentDeleted) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type DeleteCommentEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           int64                  `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
+	Comment       *KCommentDeleted       `protobuf:"bytes,2,opt,name=comment,proto3" json:"comment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteCommentEvent) Reset() {
+	*x = DeleteCommentEvent{}
+	mi := &file_kafka_posts_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteCommentEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteCommentEvent) ProtoMessage() {}
+
+func (x *DeleteCommentEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_kafka_posts_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteCommentEvent.ProtoReflect.Descriptor instead.
+func (*DeleteCommentEvent) Descriptor() ([]byte, []int) {
+	return file_kafka_posts_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DeleteCommentEvent) GetKey() int64 {
+	if x != nil {
+		return x.Key
+	}
+	return 0
+}
+
+func (x *DeleteCommentEvent) GetComment() *KCommentDeleted {
+	if x != nil {
+		return x.Comment
+	}
+	return nil
+}
+
+type KLikeCreated struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int32                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	PostId        int32                  `protobuf:"varint,2,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KLikeCreated) Reset() {
+	*x = KLikeCreated{}
+	mi := &file_kafka_posts_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KLikeCreated) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KLikeCreated) ProtoMessage() {}
+
+func (x *KLikeCreated) ProtoReflect() protoreflect.Message {
+	mi := &file_kafka_posts_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KLikeCreated.ProtoReflect.Descriptor instead.
+func (*KLikeCreated) Descriptor() ([]byte, []int) {
+	return file_kafka_posts_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *KLikeCreated) GetUserId() int32 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *KLikeCreated) GetPostId() int32 {
+	if x != nil {
+		return x.PostId
+	}
+	return 0
+}
+
+func (x *KLikeCreated) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+type LikeCreatedEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           int64                  `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
+	Like          *KLikeCreated          `protobuf:"bytes,2,opt,name=like,proto3" json:"like,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LikeCreatedEvent) Reset() {
+	*x = LikeCreatedEvent{}
+	mi := &file_kafka_posts_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LikeCreatedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LikeCreatedEvent) ProtoMessage() {}
+
+func (x *LikeCreatedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_kafka_posts_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LikeCreatedEvent.ProtoReflect.Descriptor instead.
+func (*LikeCreatedEvent) Descriptor() ([]byte, []int) {
+	return file_kafka_posts_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *LikeCreatedEvent) GetKey() int64 {
+	if x != nil {
+		return x.Key
+	}
+	return 0
+}
+
+func (x *LikeCreatedEvent) GetLike() *KLikeCreated {
+	if x != nil {
+		return x.Like
+	}
+	return nil
+}
+
+type KLikeDeleted struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int32                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	PostId        int32                  `protobuf:"varint,2,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KLikeDeleted) Reset() {
+	*x = KLikeDeleted{}
+	mi := &file_kafka_posts_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KLikeDeleted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KLikeDeleted) ProtoMessage() {}
+
+func (x *KLikeDeleted) ProtoReflect() protoreflect.Message {
+	mi := &file_kafka_posts_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KLikeDeleted.ProtoReflect.Descriptor instead.
+func (*KLikeDeleted) Descriptor() ([]byte, []int) {
+	return file_kafka_posts_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *KLikeDeleted) GetUserId() int32 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *KLikeDeleted) GetPostId() int32 {
+	if x != nil {
+		return x.PostId
+	}
+	return 0
+}
+
+type LikeDeletedEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           int64                  `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
+	Like          *KLikeDeleted          `protobuf:"bytes,2,opt,name=like,proto3" json:"like,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LikeDeletedEvent) Reset() {
+	*x = LikeDeletedEvent{}
+	mi := &file_kafka_posts_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LikeDeletedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LikeDeletedEvent) ProtoMessage() {}
+
+func (x *LikeDeletedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_kafka_posts_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LikeDeletedEvent.ProtoReflect.Descriptor instead.
+func (*LikeDeletedEvent) Descriptor() ([]byte, []int) {
+	return file_kafka_posts_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *LikeDeletedEvent) GetKey() int64 {
+	if x != nil {
+		return x.Key
+	}
+	return 0
+}
+
+func (x *LikeDeletedEvent) GetLike() *KLikeDeleted {
+	if x != nil {
+		return x.Like
 	}
 	return nil
 }
@@ -185,24 +681,50 @@ var File_kafka_posts_proto protoreflect.FileDescriptor
 
 const file_kafka_posts_proto_rawDesc = "" +
 	"\n" +
-	"\x11kafka_posts.proto\"\xb0\x01\n" +
-	"\x04Post\x12\x0e\n" +
+	"\x11kafka_posts.proto\"p\n" +
+	"\fKPostCreated\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x18\n" +
-	"\acontent\x18\x03 \x01(\tR\acontent\x12\x1f\n" +
-	"\vlikes_count\x18\x04 \x01(\x03R\n" +
-	"likesCount\x12%\n" +
-	"\x0ecomments_count\x18\x05 \x01(\x03R\rcommentsCount\x12\x1d\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\x03R\tcreatedAt\"\x97\x01\n" +
-	"\tPostEvent\x12\x19\n" +
-	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x1d\n" +
+	"created_at\x18\x04 \x01(\x03R\tcreatedAt\"F\n" +
+	"\x0fCreatePostEvent\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x03R\x03key\x12!\n" +
+	"\x04post\x18\x02 \x01(\v2\r.KPostCreatedR\x04post\"\x1e\n" +
+	"\fKPostDeleted\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"F\n" +
+	"\x0fDeletePostEvent\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x03R\x03key\x12!\n" +
+	"\x04post\x18\x02 \x01(\v2\r.KPostDeletedR\x04post\"\x8c\x01\n" +
+	"\x0fKCommentCreated\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x05R\x06userId\x12\x17\n" +
+	"\apost_id\x18\x03 \x01(\x05R\x06postId\x12\x18\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\x12\x1d\n" +
 	"\n" +
-	"event_type\x18\x02 \x01(\tR\teventType\x12\x1d\n" +
+	"created_at\x18\x05 \x01(\x03R\tcreatedAt\"R\n" +
+	"\x12CreateCommentEvent\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x03R\x03key\x12*\n" +
+	"\acomment\x18\x02 \x01(\v2\x10.KCommentCreatedR\acomment\"!\n" +
+	"\x0fKCommentDeleted\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\"R\n" +
+	"\x12DeleteCommentEvent\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x03R\x03key\x12*\n" +
+	"\acomment\x18\x02 \x01(\v2\x10.KCommentDeletedR\acomment\"_\n" +
+	"\fKLikeCreated\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x05R\x06userId\x12\x17\n" +
+	"\apost_id\x18\x02 \x01(\x05R\x06postId\x12\x1d\n" +
 	"\n" +
-	"occured_at\x18\x03 \x01(\x03R\toccuredAt\x12\x16\n" +
-	"\x06source\x18\x04 \x01(\tR\x06source\x12\x19\n" +
-	"\x04post\x18\x05 \x01(\v2\x05.PostR\x04postB\x17Z\x15/services_bindings_gob\x06proto3"
+	"created_at\x18\x03 \x01(\x03R\tcreatedAt\"G\n" +
+	"\x10LikeCreatedEvent\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x03R\x03key\x12!\n" +
+	"\x04like\x18\x02 \x01(\v2\r.KLikeCreatedR\x04like\"@\n" +
+	"\fKLikeDeleted\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x05R\x06userId\x12\x17\n" +
+	"\apost_id\x18\x02 \x01(\x05R\x06postId\"G\n" +
+	"\x10LikeDeletedEvent\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x03R\x03key\x12!\n" +
+	"\x04like\x18\x02 \x01(\v2\r.KLikeDeletedR\x04likeB\x17Z\x15/services_bindings_gob\x06proto3"
 
 var (
 	file_kafka_posts_proto_rawDescOnce sync.Once
@@ -216,18 +738,33 @@ func file_kafka_posts_proto_rawDescGZIP() []byte {
 	return file_kafka_posts_proto_rawDescData
 }
 
-var file_kafka_posts_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_kafka_posts_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_kafka_posts_proto_goTypes = []any{
-	(*Post)(nil),      // 0: Post
-	(*PostEvent)(nil), // 1: PostEvent
+	(*KPostCreated)(nil),       // 0: KPostCreated
+	(*CreatePostEvent)(nil),    // 1: CreatePostEvent
+	(*KPostDeleted)(nil),       // 2: KPostDeleted
+	(*DeletePostEvent)(nil),    // 3: DeletePostEvent
+	(*KCommentCreated)(nil),    // 4: KCommentCreated
+	(*CreateCommentEvent)(nil), // 5: CreateCommentEvent
+	(*KCommentDeleted)(nil),    // 6: KCommentDeleted
+	(*DeleteCommentEvent)(nil), // 7: DeleteCommentEvent
+	(*KLikeCreated)(nil),       // 8: KLikeCreated
+	(*LikeCreatedEvent)(nil),   // 9: LikeCreatedEvent
+	(*KLikeDeleted)(nil),       // 10: KLikeDeleted
+	(*LikeDeletedEvent)(nil),   // 11: LikeDeletedEvent
 }
 var file_kafka_posts_proto_depIdxs = []int32{
-	0, // 0: PostEvent.post:type_name -> Post
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0,  // 0: CreatePostEvent.post:type_name -> KPostCreated
+	2,  // 1: DeletePostEvent.post:type_name -> KPostDeleted
+	4,  // 2: CreateCommentEvent.comment:type_name -> KCommentCreated
+	6,  // 3: DeleteCommentEvent.comment:type_name -> KCommentDeleted
+	8,  // 4: LikeCreatedEvent.like:type_name -> KLikeCreated
+	10, // 5: LikeDeletedEvent.like:type_name -> KLikeDeleted
+	6,  // [6:6] is the sub-list for method output_type
+	6,  // [6:6] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_kafka_posts_proto_init() }
@@ -241,7 +778,7 @@ func file_kafka_posts_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_kafka_posts_proto_rawDesc), len(file_kafka_posts_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
