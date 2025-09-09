@@ -1,0 +1,17 @@
+module github.com/alimx07/Distributed_Microservices_Backend/post_service
+
+go 1.25.0
+
+require (
+	github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0-20250904205129-ace8c20fe9d9
+	github.com/lib/pq v1.10.9
+	google.golang.org/grpc v1.75.0
+)
+
+require (
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	google.golang.org/protobuf v1.36.8 // indirect
+)
