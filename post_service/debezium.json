@@ -1,0 +1,15 @@
+{
+    "name": "debezium-config",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "plugin.name": "pgoutput",
+        "publication.name" :"my_pub",
+        "slot.name": "replica_slot",
+        "database.hostname": "postgres",
+        "database.port": "5432",
+        "database.user": "replicator",
+        "database.password": "1234",
+        "database.dbname" : "postdb",
+        "topic.prefix": "post_service"
+    }
+}
