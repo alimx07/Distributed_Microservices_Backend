@@ -178,9 +178,9 @@ func (ps *PostgresRepo) GetLikes(ctx context.Context, id int64) ([]models.Like, 
 	return likes, nil
 }
 
-func (ps *PostgresRepo) GetCounters(ctx context.Context, ids []int64) ([]models.Post, error) {
+func (ps *PostgresRepo) GetCounters(ctx context.Context, ids []int64) ([]models.CachedCounter, error) {
 	if len(ids) == 0 {
-		return []models.Post{}, nil
+		return nil, nil
 	}
 
 	rows, err := ps.db.QueryContext(ctx,
@@ -192,14 +192,14 @@ func (ps *PostgresRepo) GetCounters(ctx context.Context, ids []int64) ([]models.
 	}
 	defer rows.Close()
 
-	posts := make([]models.Post, len(ids))
+	cnts := make([]models.CachedCounter, len(ids))
 	for rows.Next() {
-		var post models.Post
-		if err := rows.Scan(&post.Id, &post.Likes_count, &post.Comments_count); err != nil {
+		var cnt models.CachedCounter
+		if err := rows.Scan(&cnt.Id, &cnt.Likes, &cnt.Comments); err != nil {
 			log.Println("Error scanning post row: ", err.Error())
 			return nil, err
 		}
-		posts = append(posts, post)
+		cnts = append(cnts, cnt)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -207,7 +207,7 @@ func (ps *PostgresRepo) GetCounters(ctx context.Context, ids []int64) ([]models.
 		return nil, err
 	}
 
-	return posts, nil
+	return cnts, nil
 }
 
 func (ps *PostgresRepo) UpdateCounters(ctx context.Context, counters []models.CachedCounter) error {

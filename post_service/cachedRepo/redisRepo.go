@@ -30,15 +30,15 @@ func NewRedisRepo(repo postRepo.PostRepo, addr, pass string) *redisRepo {
 		redisClient: client,
 	}
 }
-func (rs *redisRepo) CreatePost(ctx context.Context, post models.Post) error {
+func (rs *redisRepo) CreatePost(ctx context.Context, post models.Post) (int64, error) {
 	id, err := rs.repo.CreatePost(ctx, post)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	post.Id = id
 	data, _ := json.Marshal(post)
 	rs.redisClient.Set(ctx, fmt.Sprintf("post:%v", id), data, 0)
-	return nil
+	return id, nil
 }
 
 func (rs *redisRepo) CreateComment(ctx context.Context, comment models.Comment) error {
@@ -184,11 +184,11 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 		pipe := rs.redisClient.Pipeline()
 		for _, cnt := range dbcounters {
 			i := idx[cnt.Id]
-			posts[i].Likes_count = cnt.Likes_count
-			posts[i].Comments_count = cnt.Comments_count
+			posts[i].Likes_count = cnt.Likes
+			posts[i].Comments_count = cnt.Comments
 			pipe.HSet(ctx, fmt.Sprintf("post:%v:counters", cnt.Id), map[string]interface{}{
-				"likes":    cnt.Likes_count,
-				"comments": cnt.Comments_count,
+				"likes":    cnt.Likes,
+				"comments": cnt.Comments,
 			}, 5*time.Minute)
 		}
 		_, err = pipe.Exec(ctx)
@@ -238,23 +238,17 @@ func (rs *redisRepo) GetLikes(ctx context.Context, id int64) ([]models.Like, err
 	return rs.repo.GetLikes(ctx, id)
 }
 
-func (rs *redisRepo) GetCouters(ctx context.Context, id int64) (map[string]int64, error) {
-	cnts, err := rs.redisClient.HGetAll(ctx, fmt.Sprintf("post:%v:counters", id)).Result()
-	if err != nil {
-		return nil, err
-	}
-	res := make(map[string]int64)
-	for key, value := range cnts {
-		intValue, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			log.Printf("Error in parsing %v counter of post:%v: %v\n", key, id, err.Error())
-			res[key] = 0
-		}
-		res[key] = intValue
-	}
-	return res, nil
+func (rs *redisRepo) GetCounters(ctx context.Context, ids []int64) ([]models.CachedCounter, error) {
+
+	// mock implementation for now
+	return nil, nil
 }
 
+func (rs *redisRepo) UpdateCounters(ctx context.Context, counters []models.CachedCounter) error {
+
+	// mock implementation for now
+	return nil
+}
 func (rs *redisRepo) syncCounters() {
 	ticker := time.NewTicker(2 * time.Minute)
 	for {

@@ -9,5 +9,6 @@ import (
 type CachedRepo interface {
 	postRepo.PostRepo
 
-	UpdateCounter(ctx context.Context, id int64) error
+	UpdateLikesCounter(ctx context.Context, id int64)
+	UpdateCommentsCounter(ctx context.Context, id int64)
 }

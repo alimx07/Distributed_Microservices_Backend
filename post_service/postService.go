@@ -5,8 +5,8 @@ import (
 	"log"
 	"net"
 
+	"github.com/alimx07/Distributed_Microservices_Backend/post_service/cachedRepo"
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/models"
-	"github.com/alimx07/Distributed_Microservices_Backend/post_service/postRepo"
 	pb "github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -16,11 +16,11 @@ import (
 
 type postService struct {
 	pb.UnimplementedPostSeriveServer
-	repo   postRepo.PostRepo
+	repo   cachedRepo.CachedRepo
 	config models.Config
 }
 
-func NewPostService(repo postRepo.PostRepo, config models.Config) *postService {
+func NewPostService(repo cachedRepo.CachedRepo, config models.Config) *postService {
 	return &postService{
 		repo:   repo,
 		config: config,
@@ -40,10 +40,10 @@ func (ps *postService) start() error {
 }
 func (ps *postService) CreatePost(ctx context.Context, req *pb.Post) (*pb.Response, error) {
 	post := models.Post{
-		User_id: req.GetUserId(),
-		Content: req.GetContent(),
+		CachedPost: models.CachedPost{User_id: req.GetUserId(),
+			Content: req.GetContent()},
 	}
-	err := ps.repo.CreatePost(ctx, post)
+	_, err := ps.repo.CreatePost(ctx, post)
 	if err != nil {
 		log.Printf("Failed to create post for user{%v}\n : {%v}", post.User_id, err.Error())
 		return nil, status.Error(codes.Internal, "Post Can`t be Created Due to internal Issues")

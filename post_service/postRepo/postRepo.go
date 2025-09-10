@@ -16,6 +16,6 @@ type PostRepo interface {
 	GetPosts(ctx context.Context, ids []int64) ([]models.Post, error)
 	GetComments(ctx context.Context, id int64) ([]models.Comment, error)
 	GetLikes(ctx context.Context, id int64) ([]models.Like, error)
-	GetCounters(ctx context.Context, ids []int64) ([]models.Post, error)
+	GetCounters(ctx context.Context, ids []int64) ([]models.CachedCounter, error)
 	UpdateCounters(ctx context.Context, counters []models.CachedCounter) error
 }

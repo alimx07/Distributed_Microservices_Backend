@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/alimx07/Distributed_Microservices_Backend/post_service/cachedRepo"
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/postRepo"
 )
 
@@ -16,6 +17,7 @@ func main() {
 		log.Fatal("Failed To intialize Database Connection: ", err.Error())
 	}
 	postRepo := postRepo.NewPostgresRepo(db)
-	postService := NewPostService(postRepo, config)
+	cachedRepo := cachedRepo.NewRedisRepo(postRepo, config.CacheADDR, config.CachePassword)
+	postService := NewPostService(cachedRepo, config)
 	log.Fatal(postService.start())
 }
