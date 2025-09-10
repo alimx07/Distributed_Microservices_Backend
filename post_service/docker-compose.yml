@@ -14,6 +14,8 @@ services:
       - DB_NAME=postdb
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=50051
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     ports:
       - 50051:50051
   kafka:
@@ -22,7 +24,7 @@ services:
     ports:
       - 9094:9094
     volumes:
-      - "kafka_data:/bitnami"
+      - kafka_data:/bitnami
     environment:
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_BROKER_ID=1
@@ -71,6 +73,16 @@ services:
     command: postgres -c wal_level=logical -c max_wal_senders=5 -c max_replication_slots=5
     depends_on:
       - post_service
+  redis:
+    image: bitnami/redis:latest
+    container_name: redis
+    ports:
+       - 6379:6379
+    environment:
+      - REDIS_AOF_ENABLED=no
+      - REDIS_PASSWORD=mypassword
+    volumes:
+      - ./redis_data:/bitnami/redis/data
 volumes:
   kafka_data:
     driver: local

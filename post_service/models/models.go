@@ -3,13 +3,15 @@ package models
 import "time"
 
 type Config struct {
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBName     string
-	DBPassword string
-	ServerHost string
-	ServerPort string
+	DBHost        string
+	DBPort        string
+	DBUser        string
+	DBName        string
+	DBPassword    string
+	CacheADDR     string
+	CachePassword string
+	ServerHost    string
+	ServerPort    string
 }
 
 type Post struct {
