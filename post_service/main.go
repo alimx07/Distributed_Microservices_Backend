@@ -18,6 +18,6 @@ func main() {
 	}
 	postRepo := postRepo.NewPostgresRepo(db)
 	cachedRepo := cachedRepo.NewRedisRepo(postRepo, config.CacheADDR, config.CachePassword)
-	postService := NewPostService(cachedRepo, config)
+	postService := NewPostService(postRepo, cachedRepo, config)
 	log.Fatal(postService.start())
 }

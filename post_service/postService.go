@@ -7,6 +7,7 @@ import (
 
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/cachedRepo"
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/models"
+	"github.com/alimx07/Distributed_Microservices_Backend/post_service/postRepo"
 	pb "github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -16,14 +17,16 @@ import (
 
 type postService struct {
 	pb.UnimplementedPostSeriveServer
-	repo   cachedRepo.CachedRepo
-	config models.Config
+	presistanceDB postRepo.PersistenceDB
+	cache         cachedRepo.CachedRepo
+	config        models.Config
 }
 
-func NewPostService(repo cachedRepo.CachedRepo, config models.Config) *postService {
+func NewPostService(presistance postRepo.PersistenceDB, cache cachedRepo.CachedRepo, config models.Config) *postService {
 	return &postService{
-		repo:   repo,
-		config: config,
+		presistanceDB: presistance,
+		cache:         cache,
+		config:        config,
 	}
 }
 
@@ -38,15 +41,19 @@ func (ps *postService) start() error {
 	reflection.Register(grpcserver)
 	return grpcserver.Serve(listener)
 }
+
 func (ps *postService) CreatePost(ctx context.Context, req *pb.Post) (*pb.Response, error) {
-	post := models.Post{
-		CachedPost: models.CachedPost{User_id: req.GetUserId(),
-			Content: req.GetContent()},
-	}
-	_, err := ps.repo.CreatePost(ctx, post)
+	post := models.CachedPost{User_id: req.GetUserId(),
+		Content: req.GetContent()}
+	id, err := ps.presistanceDB.CreatePost(ctx, models.Post{CachedPost: post})
 	if err != nil {
-		log.Printf("Failed to create post for user{%v}\n : {%v}", post.User_id, err.Error())
+		log.Printf("Failed to create post for user{%v}: {%v}\n", post.User_id, err.Error())
 		return nil, status.Error(codes.Internal, "Post Can`t be Created Due to internal Issues")
+	}
+	post.Id = id
+	err = ps.cache.CachePost(ctx, post)
+	if err != nil {
+		log.Printf("Failed to cache post{%v} for user{%v}\n : {%v}", post.Id, post.User_id, err.Error())
 	}
 	return &pb.Response{
 		Message: "Post Created Successfully",
@@ -59,7 +66,7 @@ func (ps *postService) CreateComment(ctx context.Context, req *pb.Comment) (*pb.
 		Post_id: req.GetPostId(),
 		Content: req.GetComment(),
 	}
-	err := ps.repo.CreateComment(ctx, comment)
+	err := ps.presistanceDB.CreateComment(ctx, comment)
 	if err != nil {
 		log.Printf("Failed to create comment on post{%v} by user{%v}: %v", comment.Post_id, comment.User_id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to create comment Due to internal Issues")
@@ -74,7 +81,7 @@ func (ps *postService) CreateLike(ctx context.Context, req *pb.Like) (*pb.Respon
 		User_id: req.UserId,
 		Post_id: req.PostId,
 	}
-	err := ps.repo.CreateLike(ctx, like)
+	err := ps.presistanceDB.CreateLike(ctx, like)
 	if err != nil {
 		log.Printf("Failed to create Like on post{%v} by user{%v} : %v", like.Post_id, like.User_id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to create like Due to internal Issues")
@@ -87,12 +94,20 @@ func (ps *postService) CreateLike(ctx context.Context, req *pb.Like) (*pb.Respon
 func (ps *postService) DeletePost(ctx context.Context, req *pb.Delete) (*pb.Response, error) {
 	id := req.GetId()
 	user_id := req.GetUserId()
-
-	err := ps.repo.DeletePost(ctx, id, user_id)
+	err := ps.presistanceDB.DeletePost(ctx, id)
 	if err != nil {
 		log.Printf("Failed to delete post{%v} for user{%v}: %v\n", id, user_id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to Delete Post Due to Internal Issues")
 	}
+
+	err = ps.cache.DeletePost(ctx, id)
+	if err != nil {
+		// in case of cache failing , then there will be inconsistency as users can still see the post
+		// even it is deleted. a background proccess can be spin up to take cache failed operations and
+		// retry them again. for simplecity just log the error now
+		log.Printf("Failed to Delete post {%v} from the cache: {%v}\n", id, err.Error())
+	}
+
 	return &pb.Response{
 		Message: "Post Deleted Successfully",
 	}, nil
@@ -101,7 +116,7 @@ func (ps *postService) DeleteComment(ctx context.Context, req *pb.Delete) (*pb.R
 	id := req.GetId()
 	user_id := req.GetUserId()
 
-	err := ps.repo.DeleteComment(ctx, id, user_id)
+	err := ps.presistanceDB.DeleteComment(ctx, id)
 	if err != nil {
 		log.Printf("Failed to delete Comment{%v} for user{%v}: %v\n", id, user_id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to Delete Comment Due to Internal Issues")
@@ -115,7 +130,7 @@ func (ps *postService) DeleteLike(ctx context.Context, req *pb.Delete) (*pb.Resp
 	id := req.GetId()
 	user_id := req.GetUserId()
 
-	err := ps.repo.DeleteLike(ctx, id, user_id)
+	err := ps.presistanceDB.DeleteLike(ctx, id, user_id)
 	if err != nil {
 		log.Printf("Failed to delete Like{%v} for user{%v}: %v\n", id, user_id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to Delete Like Due to Internal Issues")

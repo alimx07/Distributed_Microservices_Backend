@@ -15,80 +15,32 @@ import (
 )
 
 type redisRepo struct {
-	repo        postRepo.PostRepo // presistance db
-	redisClient *redis.Client
-	ctx         context.Context
+	presistanceDB postRepo.PersistenceDB
+	redisClient   *redis.Client
+	ctx           context.Context
 }
 
-func NewRedisRepo(repo postRepo.PostRepo, addr, pass string) *redisRepo {
+func NewRedisRepo(repo postRepo.PersistenceDB, addr, pass string) *redisRepo {
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: pass,
 	})
 	return &redisRepo{
-		repo:        repo,
-		redisClient: client,
+		presistanceDB: repo,
+		redisClient:   client,
 	}
 }
-func (rs *redisRepo) CreatePost(ctx context.Context, post models.Post) (int64, error) {
-	id, err := rs.repo.CreatePost(ctx, post)
-	if err != nil {
-		return 0, err
-	}
-	post.Id = id
+
+func (rs *redisRepo) CachePost(ctx context.Context, post models.CachedPost) error {
 	data, _ := json.Marshal(post)
-	rs.redisClient.Set(ctx, fmt.Sprintf("post:%v", id), data, 0)
-	return id, nil
+	err := rs.redisClient.Set(ctx, fmt.Sprintf("post:%v", post.Id), data, 0).Err()
+	return err
 }
 
-func (rs *redisRepo) CreateComment(ctx context.Context, comment models.Comment) error {
-	err := rs.repo.CreateComment(ctx, comment)
-	if err != nil {
-		return err
-	}
-
-	// no caching for comments now
-	return nil
-}
-
-func (rs *redisRepo) CreateLike(ctx context.Context, like models.Like) error {
-	err := rs.repo.CreateLike(ctx, like)
-	if err != nil {
-		return err
-	}
-
-	// no caching for likes now
-	return nil
-}
-
-func (rs *redisRepo) DeletePost(ctx context.Context, id int64, userID int32) error {
-	err := rs.repo.DeletePost(ctx, id, userID)
-	if err != nil {
-		return err
-	}
-
+func (rs *redisRepo) DeletePost(ctx context.Context, id int64) error {
 	// Remove from cache
-	rs.redisClient.Del(ctx, fmt.Sprintf("post:%v", id))
-	return nil
-}
-
-func (rs *redisRepo) DeleteComment(ctx context.Context, id int64, userID int32) error {
-
-	err := rs.repo.DeleteComment(ctx, id, userID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (rs *redisRepo) DeleteLike(ctx context.Context, postID int64, userID int32) error {
-	err := rs.repo.DeleteLike(ctx, postID, userID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	err := rs.redisClient.Del(ctx, fmt.Sprintf("post:%v", id)).Err()
+	return err
 }
 
 func (rs *redisRepo) UpdateLikesCounter(ctx context.Context, id int64) {
@@ -111,6 +63,7 @@ func (rs *redisRepo) UpdateCommentsCounter(ctx context.Context, id int64) {
 // 	return rs.redisClient.MGet(ctx , commentKeys...)
 // }
 
+// This function will be moved later
 func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, error) {
 	if len(ids) == 0 {
 		return []models.Post{}, nil
@@ -177,7 +130,7 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 	}
 	// Get missed counters
 	if len(missedCounter) > 0 {
-		dbcounters, err := rs.repo.GetCounters(ctx, missedCounter)
+		dbcounters, err := rs.presistanceDB.GetCounters(ctx, missedCounter)
 		if err != nil {
 			log.Println("Error in fetching counters form db: ", err.Error())
 		}
@@ -198,7 +151,7 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 	}
 	// From Database
 	if len(missedPostIDs) > 0 {
-		dbPosts, err := rs.repo.GetPosts(ctx, missedPostIDs)
+		dbPosts, err := rs.presistanceDB.GetPosts(ctx, missedPostIDs)
 		if err != nil {
 			return posts, err
 		}
@@ -224,32 +177,7 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 	return posts, nil
 }
 
-func (rs *redisRepo) GetComments(ctx context.Context, id int64) ([]models.Comment, error) {
-
-	// No Caching for comments Now
-	// just read from DB
-	return rs.repo.GetComments(ctx, id)
-
-}
-
-func (rs *redisRepo) GetLikes(ctx context.Context, id int64) ([]models.Like, error) {
-	// No Caching for likes Now
-	// just read from DB
-	return rs.repo.GetLikes(ctx, id)
-}
-
-func (rs *redisRepo) GetCounters(ctx context.Context, ids []int64) ([]models.CachedCounter, error) {
-
-	// mock implementation for now
-	return nil, nil
-}
-
-func (rs *redisRepo) UpdateCounters(ctx context.Context, counters []models.CachedCounter) error {
-
-	// mock implementation for now
-	return nil
-}
-func (rs *redisRepo) syncCounters() {
+func (rs *redisRepo) SyncCounters() {
 	ticker := time.NewTicker(2 * time.Minute)
 	for {
 		select {
@@ -300,7 +228,7 @@ func (rs *redisRepo) syncCounters() {
 					}
 					cnts = append(cnts, cachedcounter)
 				}
-				rs.repo.UpdateCounters(rs.ctx, cnts)
+				rs.presistanceDB.UpdateCounters(rs.ctx, cnts)
 			}
 		}
 	}

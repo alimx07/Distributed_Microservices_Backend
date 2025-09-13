@@ -55,7 +55,7 @@ func (ps *PostgresRepo) CreateLike(ctx context.Context, like models.Like) error 
 	return nil
 }
 
-func (ps *PostgresRepo) DeletePost(ctx context.Context, id int64, user_id int32) error {
+func (ps *PostgresRepo) DeletePost(ctx context.Context, id int64) error {
 	_, err := ps.db.ExecContext(ctx,
 		`DELETE FROM posts where id = $1`, id)
 	if err != nil {
@@ -64,7 +64,7 @@ func (ps *PostgresRepo) DeletePost(ctx context.Context, id int64, user_id int32)
 	}
 	return nil
 }
-func (ps *PostgresRepo) DeleteComment(ctx context.Context, id int64, user_id int32) error {
+func (ps *PostgresRepo) DeleteComment(ctx context.Context, id int64) error {
 	_, err := ps.db.ExecContext(ctx,
 		`DELETE FROM comments where id = $1`, id)
 	if err != nil {
@@ -73,11 +73,11 @@ func (ps *PostgresRepo) DeleteComment(ctx context.Context, id int64, user_id int
 	}
 	return nil
 }
-func (ps *PostgresRepo) DeleteLike(ctx context.Context, post_id int64, user_id int32) error {
+func (ps *PostgresRepo) DeleteLike(ctx context.Context, post_id int64, userId int32) error {
 	_, err := ps.db.ExecContext(ctx,
-		`DELETE FROM likes where user_id = $1 AND post_id = $2`, user_id, post_id)
+		`DELETE FROM likes where user_id = $1 AND post_id = $2`, userId, post_id)
 	if err != nil {
-		log.Printf("Error Deleting of user{%v} for post{%v} : %v\n", user_id, post_id, err.Error())
+		log.Printf("Error Deleting of user{%v} for post{%v} : %v\n", userId, post_id, err.Error())
 		return err
 	}
 	return nil
@@ -152,7 +152,7 @@ func (ps *PostgresRepo) GetLikes(ctx context.Context, id int64) ([]models.Like, 
 	rows, err := ps.db.QueryContext(ctx,
 		`SELECT post_id, user_id, created_at 
         FROM likes 
-        WHERE post_id = $id`,
+        WHERE post_id = $1`,
 		id)
 	if err != nil {
 		log.Println("Error querying likes: ", err.Error())
