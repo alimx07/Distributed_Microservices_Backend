@@ -14,8 +14,9 @@ services:
       - DB_NAME=postdb
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=50051
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - CACHE_ADDR=redis
+      - CACHE_PORT=6379
+      - CACHE_PASSWORD = mypassword
     ports:
       - 50051:50051
   kafka:
@@ -53,6 +54,8 @@ services:
       - VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
       - INTERNAL_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
       - NTERNAL_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+    volumes:
+    - $PWD/jars:/kafka/connect/debezium-connector-postgres
     depends_on:
       - kafka
 

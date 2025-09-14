@@ -8,7 +8,8 @@ type Config struct {
 	DBUser        string
 	DBName        string
 	DBPassword    string
-	CacheADDR     string
+	CacheHost     string
+	CachePort     string
 	CachePassword string
 	ServerHost    string
 	ServerPort    string
