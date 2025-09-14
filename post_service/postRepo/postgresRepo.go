@@ -215,45 +215,13 @@ func (ps *PostgresRepo) UpdateCounters(ctx context.Context, counters []models.Ca
 	for _, cnt := range counters {
 		values = append(values, fmt.Sprintf("%d,%d,%d", cnt.Id, cnt.Likes, cnt.Comments))
 	}
-	tx, err := ps.db.BeginTx(ctx, nil)
+	query := fmt.Sprintf(`UPDATE posts p SET 
+						likes = p.likes + v.likes, comments = p.comments + v.comments
+						FROM (VALUES %s)AS v(id , likes , comments) 
+						WHERE v.id = p.id`, strings.Join(values, ","))
+	_, err := ps.db.ExecContext(ctx, query)
 	if err != nil {
-		log.Println("Error in opening transactions in updateCounters: ", err.Error())
-		return err
-	}
-
-	defer tx.Rollback()
-	_, err = tx.Exec(`CREATE TEMP TABLE post_deltas (
-    id BIGINT,
-    likes BIGINT,
-    comments BIGINT)
-	ON COMMIT DROP;`)
-
-	if err != nil {
-		log.Println("Error Creating Temp Table: ", err.Error())
-		return err
-	}
-
-	query := fmt.Sprintf(`INSERT INTO post_deltas Values %s`, strings.Join(values, ","))
-	_, err = tx.Exec(query)
-
-	if err != nil {
-		log.Println("Error in Inserting deltas: ", err.Error())
-		return err
-	}
-
-	_, err = tx.Exec(`UPDATE posts p
-	SET likes = p.likes + d.likes,
-    comments = p.comments + d.comments
-	FROM post_deltas d
-	WHERE p.id = d.id;`)
-
-	if err != nil {
-		log.Println("Error in Updating Values: ", err.Error())
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		log.Println("Error in Commiting update transaction: ", err.Error())
+		log.Printf("Error In updating Counters: %v", err.Error())
 		return err
 	}
 	return nil

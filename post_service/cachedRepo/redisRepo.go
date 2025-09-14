@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -20,9 +21,9 @@ type redisRepo struct {
 	ctx           context.Context
 }
 
-func NewRedisRepo(repo postRepo.PersistenceDB, addr, pass string) *redisRepo {
+func NewRedisRepo(repo postRepo.PersistenceDB, host, port, pass string) *redisRepo {
 	client := redis.NewClient(&redis.Options{
-		Addr:     addr,
+		Addr:     net.JoinHostPort(host, port),
 		Password: pass,
 	})
 	return &redisRepo{
@@ -33,22 +34,24 @@ func NewRedisRepo(repo postRepo.PersistenceDB, addr, pass string) *redisRepo {
 
 func (rs *redisRepo) CachePost(ctx context.Context, post models.CachedPost) error {
 	data, _ := json.Marshal(post)
-	err := rs.redisClient.Set(ctx, fmt.Sprintf("post:%v", post.Id), data, 0).Err()
+	err := rs.redisClient.Set(ctx, postKey(post.Id), data, 24*time.Hour).Err()
 	return err
 }
 
 func (rs *redisRepo) DeletePost(ctx context.Context, id int64) error {
 	// Remove from cache
-	err := rs.redisClient.Del(ctx, fmt.Sprintf("post:%v", id)).Err()
+	err := rs.redisClient.Del(ctx, postKey(id)).Err()
 	return err
 }
 
 func (rs *redisRepo) UpdateLikesCounter(ctx context.Context, id int64) {
-	rs.redisClient.HIncrBy(ctx, fmt.Sprintf("post:%v:counters", id), "likes", 1)
+	rs.redisClient.HIncrBy(ctx, counterKey(id), "likes", 1)
+	rs.redisClient.SAdd(ctx, "counters:set", counterKey(id))
 }
 
 func (rs *redisRepo) UpdateCommentsCounter(ctx context.Context, id int64) {
-	rs.redisClient.HIncrBy(ctx, fmt.Sprintf("post:%v:counters", id), "comments", 1)
+	rs.redisClient.HIncrBy(ctx, counterKey(id), "comments", 1)
+	rs.redisClient.SAdd(ctx, "counters:set", counterKey(id))
 }
 
 // func (rs *redisRepo) GetCounters(ctx context.Context , keys []string) *redis.SliceCmd {
@@ -75,7 +78,7 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 
 	for i, id := range ids {
 		keys[i] = fmt.Sprintf("post:%d", id)
-		cmds[i] = pipe.HGetAll(ctx, fmt.Sprintf("posts:%v:counters", id))
+		cmds[i] = pipe.HGetAll(ctx, counterKey(id))
 	}
 	// From Cache First
 	posts := make([]models.Post, len(ids))
@@ -105,13 +108,14 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 			missedPostIDs = append(missedPostIDs, ids[i])
 			continue
 		}
-		cnt := cmds[i].Val()
+		cnt, err := cmds[i].Result()
 
 		// in cache of cache miss
 		// instead on go to db for this counter only
 		// store it in map , go to db once get all couters
 		// and map counters back to thier posts
-		if len(cnt) == 0 {
+		if err != nil || len(cnt) == 0 {
+			log.Printf("Cache miss for counters of post:%v\n", err.Error())
 			missedCounter = append(missedCounter, p.Id)
 			idx[p.Id] = i
 		} else {
@@ -139,10 +143,7 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 			i := idx[cnt.Id]
 			posts[i].Likes_count = cnt.Likes
 			posts[i].Comments_count = cnt.Comments
-			pipe.HSet(ctx, fmt.Sprintf("post:%v:counters", cnt.Id), map[string]interface{}{
-				"likes":    cnt.Likes,
-				"comments": cnt.Comments,
-			}, 5*time.Minute)
+			pipe.HMSet(ctx, counterKey(cnt.Id), "likes", cnt.Likes, "comments", cnt.Comments)
 		}
 		_, err = pipe.Exec(ctx)
 		if err != nil {
@@ -163,10 +164,7 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 
 			// populate data back to caches
 			pipe.Set(ctx, fmt.Sprintf("post:%v", post.Id), data, 24*time.Hour)
-			pipe.HSet(ctx, fmt.Sprintf("post:%v:counters", post.Id), map[string]interface{}{
-				"likes":    post.Likes_count,
-				"comments": post.Comments_count,
-			}, 5*time.Minute)
+			pipe.MSet(ctx, fmt.Sprintf("post:%v:likes", post.Id), post.Likes_count, fmt.Sprintf("post:%v:comments", post.Id), post.Comments_count)
 			posts = append(posts, post)
 		}
 		_, err = pipe.Exec(ctx)
@@ -179,6 +177,8 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 
 func (rs *redisRepo) SyncCounters() {
 	ticker := time.NewTicker(2 * time.Minute)
+
+	defer ticker.Stop()
 	for {
 		select {
 		case <-rs.ctx.Done():
@@ -188,7 +188,7 @@ func (rs *redisRepo) SyncCounters() {
 			for {
 				var keys []string
 				var err error
-				keys, cursor, err = rs.redisClient.SScan(rs.ctx, "counters:set", cursor, "*", 100).Result()
+				keys, cursor, err = rs.redisClient.SScan(rs.ctx, "counters:set", cursor, "post:*:counters", 100).Result()
 				if err != nil {
 					continue
 				}
@@ -196,16 +196,20 @@ func (rs *redisRepo) SyncCounters() {
 					break
 				}
 				pipe := rs.redisClient.Pipeline()
-				cmds := make(map[string]*redis.MapStringStringCmd)
+				cmds := make(map[string]*redis.StringSliceCmd)
 				for _, key := range keys {
-					cmds[key] = pipe.HGetAll(rs.ctx, key)
+
+					// Get and Delete all keys from cache
+					// now any new likes/comments will be added by updateFuncs and sync in the next cycle
+					// but there is consistency issue if flushing to db failed
+					// rename trick can be used or queue for consistency but i will go with GetDel solution for simplecity now
+					cmds[key] = pipe.HGetDel(rs.ctx, key, "likes", "comments")
 				}
 				_, err = pipe.Exec(rs.ctx)
 				if err != nil {
 					log.Println("Error while Fetching Counters in background sync: ", err.Error())
 				}
 				var cnts []models.CachedCounter
-
 				for key, cmd := range cmds {
 					cnt, err := cmd.Result()
 					if err != nil {
@@ -216,13 +220,14 @@ func (rs *redisRepo) SyncCounters() {
 					cachedcounter := models.CachedCounter{
 						Id: cnt_key,
 					}
-					if v, ok := cnt["likes"]; ok {
-						if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+
+					if cnt[0] != "" {
+						if n, err := strconv.ParseInt(cnt[0], 10, 64); err == nil {
 							cachedcounter.Likes = n
 						}
 					}
-					if v, ok := cnt["comments"]; ok {
-						if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+					if cnt[1] != "" {
+						if n, err := strconv.ParseInt(cnt[1], 10, 64); err == nil {
 							cachedcounter.Comments = n
 						}
 					}
@@ -233,3 +238,27 @@ func (rs *redisRepo) SyncCounters() {
 		}
 	}
 }
+
+func postKey(id int64) string {
+	return fmt.Sprintf("post:%v", id)
+}
+
+func counterKey(id int64) string {
+	return fmt.Sprintf("post:%v:counters", id)
+}
+
+// func (rs *redisRepo) SyncCounters() {
+// 	ticker := time.NewTicker(2 * time.Minute)
+// 	defer ticker.Stop()
+
+// 	for {
+// 		select {
+// 		case <-rs.ctx.Done():
+// 			return
+// 		case <-ticker.C:
+// 			if err := rs.syncIteration(); err != nil {
+// 				log.Printf("Sync iteration failed: %v", err)
+// 			}
+// 		}
+// 	}
+// }
