@@ -16,7 +16,7 @@ services:
       - SERVER_PORT=50051
       - CACHE_ADDR=redis
       - CACHE_PORT=6379
-      - CACHE_PASSWORD = mypassword
+      - CACHE_PASSWORD=mypassword
     ports:
       - 50051:50051
   kafka:
@@ -46,16 +46,12 @@ services:
       - 8083:8083
     environment:
       - BOOTSTRAP_SERVERS=kafka:9092
-      - ROUP_ID=connect_cluster1
+      - GROUP_ID=connect_cluster1
       - CONFIG_STORAGE_TOPIC=connect_configs
       - OFFSET_STORAGE_TOPIC=connect_offsets
       - STATUS_STORAGE_TOPIC=connect_status
-      - KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-      - VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-      - INTERNAL_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-      - NTERNAL_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-    volumes:
-    - $PWD/jars:/kafka/connect/debezium-connector-postgres
+    # volumes:
+    # - $PWD/jars:/kafka/connect/debezium-connector-postgres
     depends_on:
       - kafka
 
