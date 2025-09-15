@@ -24,7 +24,8 @@ const (
 type Post struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        int32                  `protobuf:"varint,1,opt,name=UserId,proto3" json:"UserId,omitempty"`
-	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=Content,proto3" json:"Content,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,3,opt,name=CreatedAt,proto3" json:"CreatedAt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -73,11 +74,19 @@ func (x *Post) GetContent() string {
 	return ""
 }
 
+func (x *Post) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
 type Comment struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PostId        int64                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
 	UserId        int32                  `protobuf:"varint,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	Comment       string                 `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,4,opt,name=CreatedAt,proto3" json:"CreatedAt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -133,6 +142,13 @@ func (x *Comment) GetComment() string {
 	return ""
 }
 
+func (x *Comment) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
 type Like struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PostId        int64                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
@@ -185,28 +201,27 @@ func (x *Like) GetUserId() int32 {
 	return 0
 }
 
-type Delete struct {
+type DeletePostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=Id,proto3" json:"Id,omitempty"`
-	UserId        int32                  `protobuf:"varint,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
+	PostId        int64                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Delete) Reset() {
-	*x = Delete{}
+func (x *DeletePostRequest) Reset() {
+	*x = DeletePostRequest{}
 	mi := &file_post_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Delete) String() string {
+func (x *DeletePostRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Delete) ProtoMessage() {}
+func (*DeletePostRequest) ProtoMessage() {}
 
-func (x *Delete) ProtoReflect() protoreflect.Message {
+func (x *DeletePostRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_post_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -218,23 +233,200 @@ func (x *Delete) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Delete.ProtoReflect.Descriptor instead.
-func (*Delete) Descriptor() ([]byte, []int) {
+// Deprecated: Use DeletePostRequest.ProtoReflect.Descriptor instead.
+func (*DeletePostRequest) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *Delete) GetId() int64 {
+func (x *DeletePostRequest) GetPostId() int64 {
 	if x != nil {
-		return x.Id
+		return x.PostId
 	}
 	return 0
 }
 
-func (x *Delete) GetUserId() int32 {
+type DeleteCommentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CommentId     int64                  `protobuf:"varint,1,opt,name=CommentId,proto3" json:"CommentId,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteCommentRequest) Reset() {
+	*x = DeleteCommentRequest{}
+	mi := &file_post_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteCommentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteCommentRequest) ProtoMessage() {}
+
+func (x *DeleteCommentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_post_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteCommentRequest.ProtoReflect.Descriptor instead.
+func (*DeleteCommentRequest) Descriptor() ([]byte, []int) {
+	return file_post_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *DeleteCommentRequest) GetCommentId() int64 {
+	if x != nil {
+		return x.CommentId
+	}
+	return 0
+}
+
+type DeleteLikeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PostId        int64                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
+	UserId        int32                  `protobuf:"varint,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteLikeRequest) Reset() {
+	*x = DeleteLikeRequest{}
+	mi := &file_post_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteLikeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteLikeRequest) ProtoMessage() {}
+
+func (x *DeleteLikeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_post_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteLikeRequest.ProtoReflect.Descriptor instead.
+func (*DeleteLikeRequest) Descriptor() ([]byte, []int) {
+	return file_post_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DeleteLikeRequest) GetPostId() int64 {
+	if x != nil {
+		return x.PostId
+	}
+	return 0
+}
+
+func (x *DeleteLikeRequest) GetUserId() int32 {
 	if x != nil {
 		return x.UserId
 	}
 	return 0
+}
+
+type GetPostRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PostId        []int64                `protobuf:"varint,1,rep,packed,name=PostId,proto3" json:"PostId,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPostRequest) Reset() {
+	*x = GetPostRequest{}
+	mi := &file_post_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPostRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPostRequest) ProtoMessage() {}
+
+func (x *GetPostRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_post_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPostRequest.ProtoReflect.Descriptor instead.
+func (*GetPostRequest) Descriptor() ([]byte, []int) {
+	return file_post_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetPostRequest) GetPostId() []int64 {
+	if x != nil {
+		return x.PostId
+	}
+	return nil
+}
+
+type GetPostResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Post          []*Post                `protobuf:"bytes,1,rep,name=post,proto3" json:"post,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPostResponse) Reset() {
+	*x = GetPostResponse{}
+	mi := &file_post_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPostResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPostResponse) ProtoMessage() {}
+
+func (x *GetPostResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_post_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPostResponse.ProtoReflect.Descriptor instead.
+func (*GetPostResponse) Descriptor() ([]byte, []int) {
+	return file_post_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetPostResponse) GetPost() []*Post {
+	if x != nil {
+		return x.Post
+	}
+	return nil
 }
 
 type Response struct {
@@ -246,7 +438,7 @@ type Response struct {
 
 func (x *Response) Reset() {
 	*x = Response{}
-	mi := &file_post_proto_msgTypes[4]
+	mi := &file_post_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -258,7 +450,7 @@ func (x *Response) String() string {
 func (*Response) ProtoMessage() {}
 
 func (x *Response) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[4]
+	mi := &file_post_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -271,7 +463,7 @@ func (x *Response) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Response.ProtoReflect.Descriptor instead.
 func (*Response) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{4}
+	return file_post_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Response) GetMessage() string {
@@ -286,34 +478,45 @@ var File_post_proto protoreflect.FileDescriptor
 const file_post_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"post.proto\"8\n" +
+	"post.proto\"V\n" +
 	"\x04Post\x12\x16\n" +
 	"\x06UserId\x18\x01 \x01(\x05R\x06UserId\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\tR\acontent\"S\n" +
+	"\aContent\x18\x02 \x01(\tR\aContent\x12\x1c\n" +
+	"\tCreatedAt\x18\x03 \x01(\x03R\tCreatedAt\"q\n" +
 	"\aComment\x12\x16\n" +
 	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\x12\x16\n" +
 	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\x12\x18\n" +
-	"\acomment\x18\x03 \x01(\tR\acomment\"6\n" +
+	"\acomment\x18\x03 \x01(\tR\acomment\x12\x1c\n" +
+	"\tCreatedAt\x18\x04 \x01(\x03R\tCreatedAt\"6\n" +
 	"\x04Like\x12\x16\n" +
 	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\x12\x16\n" +
-	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\"0\n" +
-	"\x06Delete\x12\x0e\n" +
-	"\x02Id\x18\x01 \x01(\x03R\x02Id\x12\x16\n" +
-	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\"$\n" +
+	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\"+\n" +
+	"\x11DeletePostRequest\x12\x16\n" +
+	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\"4\n" +
+	"\x14DeleteCommentRequest\x12\x1c\n" +
+	"\tCommentId\x18\x01 \x01(\x03R\tCommentId\"C\n" +
+	"\x11DeleteLikeRequest\x12\x16\n" +
+	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\x12\x16\n" +
+	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\"(\n" +
+	"\x0eGetPostRequest\x12\x16\n" +
+	"\x06PostId\x18\x01 \x03(\x03R\x06PostId\",\n" +
+	"\x0fGetPostResponse\x12\x19\n" +
+	"\x04post\x18\x01 \x03(\v2\x05.PostR\x04post\"$\n" +
 	"\bResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2\xe7\x01\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage2\xbc\x02\n" +
 	"\n" +
 	"PostSerive\x12 \n" +
 	"\n" +
 	"CreatePost\x12\x05.Post\x1a\t.Response\"\x00\x12&\n" +
 	"\rCreateComment\x12\b.Comment\x1a\t.Response\"\x00\x12 \n" +
 	"\n" +
-	"CreateLike\x12\x05.Like\x1a\t.Response\"\x00\x12\"\n" +
+	"CreateLike\x12\x05.Like\x1a\t.Response\"\x00\x12-\n" +
 	"\n" +
-	"DeletePost\x12\a.Delete\x1a\t.Response\"\x00\x12%\n" +
-	"\rDeleteComment\x12\a.Delete\x1a\t.Response\"\x00\x12\"\n" +
+	"DeletePost\x12\x12.DeletePostRequest\x1a\t.Response\"\x00\x123\n" +
+	"\rDeleteComment\x12\x15.DeleteCommentRequest\x1a\t.Response\"\x00\x12-\n" +
 	"\n" +
-	"DeleteLike\x12\a.Delete\x1a\t.Response\"\x00B\x17Z\x15/services_bindings_gob\x06proto3"
+	"DeleteLike\x12\x12.DeleteLikeRequest\x1a\t.Response\"\x00\x12/\n" +
+	"\bGetPosts\x12\x0f.GetPostRequest\x1a\x10.GetPostResponse\"\x00B\x17Z\x15/services_bindings_gob\x06proto3"
 
 var (
 	file_post_proto_rawDescOnce sync.Once
@@ -327,32 +530,39 @@ func file_post_proto_rawDescGZIP() []byte {
 	return file_post_proto_rawDescData
 }
 
-var file_post_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_post_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_post_proto_goTypes = []any{
-	(*Post)(nil),     // 0: Post
-	(*Comment)(nil),  // 1: Comment
-	(*Like)(nil),     // 2: Like
-	(*Delete)(nil),   // 3: Delete
-	(*Response)(nil), // 4: Response
+	(*Post)(nil),                 // 0: Post
+	(*Comment)(nil),              // 1: Comment
+	(*Like)(nil),                 // 2: Like
+	(*DeletePostRequest)(nil),    // 3: DeletePostRequest
+	(*DeleteCommentRequest)(nil), // 4: DeleteCommentRequest
+	(*DeleteLikeRequest)(nil),    // 5: DeleteLikeRequest
+	(*GetPostRequest)(nil),       // 6: GetPostRequest
+	(*GetPostResponse)(nil),      // 7: GetPostResponse
+	(*Response)(nil),             // 8: Response
 }
 var file_post_proto_depIdxs = []int32{
-	0, // 0: PostSerive.CreatePost:input_type -> Post
-	1, // 1: PostSerive.CreateComment:input_type -> Comment
-	2, // 2: PostSerive.CreateLike:input_type -> Like
-	3, // 3: PostSerive.DeletePost:input_type -> Delete
-	3, // 4: PostSerive.DeleteComment:input_type -> Delete
-	3, // 5: PostSerive.DeleteLike:input_type -> Delete
-	4, // 6: PostSerive.CreatePost:output_type -> Response
-	4, // 7: PostSerive.CreateComment:output_type -> Response
-	4, // 8: PostSerive.CreateLike:output_type -> Response
-	4, // 9: PostSerive.DeletePost:output_type -> Response
-	4, // 10: PostSerive.DeleteComment:output_type -> Response
-	4, // 11: PostSerive.DeleteLike:output_type -> Response
-	6, // [6:12] is the sub-list for method output_type
-	0, // [0:6] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: GetPostResponse.post:type_name -> Post
+	0, // 1: PostSerive.CreatePost:input_type -> Post
+	1, // 2: PostSerive.CreateComment:input_type -> Comment
+	2, // 3: PostSerive.CreateLike:input_type -> Like
+	3, // 4: PostSerive.DeletePost:input_type -> DeletePostRequest
+	4, // 5: PostSerive.DeleteComment:input_type -> DeleteCommentRequest
+	5, // 6: PostSerive.DeleteLike:input_type -> DeleteLikeRequest
+	6, // 7: PostSerive.GetPosts:input_type -> GetPostRequest
+	8, // 8: PostSerive.CreatePost:output_type -> Response
+	8, // 9: PostSerive.CreateComment:output_type -> Response
+	8, // 10: PostSerive.CreateLike:output_type -> Response
+	8, // 11: PostSerive.DeletePost:output_type -> Response
+	8, // 12: PostSerive.DeleteComment:output_type -> Response
+	8, // 13: PostSerive.DeleteLike:output_type -> Response
+	7, // 14: PostSerive.GetPosts:output_type -> GetPostResponse
+	8, // [8:15] is the sub-list for method output_type
+	1, // [1:8] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_post_proto_init() }
@@ -366,7 +576,7 @@ func file_post_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_post_proto_rawDesc), len(file_post_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

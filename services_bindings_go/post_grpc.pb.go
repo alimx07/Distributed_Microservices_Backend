@@ -25,6 +25,7 @@ const (
 	PostSerive_DeletePost_FullMethodName    = "/PostSerive/DeletePost"
 	PostSerive_DeleteComment_FullMethodName = "/PostSerive/DeleteComment"
 	PostSerive_DeleteLike_FullMethodName    = "/PostSerive/DeleteLike"
+	PostSerive_GetPosts_FullMethodName      = "/PostSerive/GetPosts"
 )
 
 // PostSeriveClient is the client API for PostSerive service.
@@ -34,9 +35,10 @@ type PostSeriveClient interface {
 	CreatePost(ctx context.Context, in *Post, opts ...grpc.CallOption) (*Response, error)
 	CreateComment(ctx context.Context, in *Comment, opts ...grpc.CallOption) (*Response, error)
 	CreateLike(ctx context.Context, in *Like, opts ...grpc.CallOption) (*Response, error)
-	DeletePost(ctx context.Context, in *Delete, opts ...grpc.CallOption) (*Response, error)
-	DeleteComment(ctx context.Context, in *Delete, opts ...grpc.CallOption) (*Response, error)
-	DeleteLike(ctx context.Context, in *Delete, opts ...grpc.CallOption) (*Response, error)
+	DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*Response, error)
+	DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*Response, error)
+	DeleteLike(ctx context.Context, in *DeleteLikeRequest, opts ...grpc.CallOption) (*Response, error)
+	GetPosts(ctx context.Context, in *GetPostRequest, opts ...grpc.CallOption) (*GetPostResponse, error)
 }
 
 type postSeriveClient struct {
@@ -77,7 +79,7 @@ func (c *postSeriveClient) CreateLike(ctx context.Context, in *Like, opts ...grp
 	return out, nil
 }
 
-func (c *postSeriveClient) DeletePost(ctx context.Context, in *Delete, opts ...grpc.CallOption) (*Response, error) {
+func (c *postSeriveClient) DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, PostSerive_DeletePost_FullMethodName, in, out, cOpts...)
@@ -87,7 +89,7 @@ func (c *postSeriveClient) DeletePost(ctx context.Context, in *Delete, opts ...g
 	return out, nil
 }
 
-func (c *postSeriveClient) DeleteComment(ctx context.Context, in *Delete, opts ...grpc.CallOption) (*Response, error) {
+func (c *postSeriveClient) DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, PostSerive_DeleteComment_FullMethodName, in, out, cOpts...)
@@ -97,10 +99,20 @@ func (c *postSeriveClient) DeleteComment(ctx context.Context, in *Delete, opts .
 	return out, nil
 }
 
-func (c *postSeriveClient) DeleteLike(ctx context.Context, in *Delete, opts ...grpc.CallOption) (*Response, error) {
+func (c *postSeriveClient) DeleteLike(ctx context.Context, in *DeleteLikeRequest, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, PostSerive_DeleteLike_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *postSeriveClient) GetPosts(ctx context.Context, in *GetPostRequest, opts ...grpc.CallOption) (*GetPostResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPostResponse)
+	err := c.cc.Invoke(ctx, PostSerive_GetPosts_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -114,9 +126,10 @@ type PostSeriveServer interface {
 	CreatePost(context.Context, *Post) (*Response, error)
 	CreateComment(context.Context, *Comment) (*Response, error)
 	CreateLike(context.Context, *Like) (*Response, error)
-	DeletePost(context.Context, *Delete) (*Response, error)
-	DeleteComment(context.Context, *Delete) (*Response, error)
-	DeleteLike(context.Context, *Delete) (*Response, error)
+	DeletePost(context.Context, *DeletePostRequest) (*Response, error)
+	DeleteComment(context.Context, *DeleteCommentRequest) (*Response, error)
+	DeleteLike(context.Context, *DeleteLikeRequest) (*Response, error)
+	GetPosts(context.Context, *GetPostRequest) (*GetPostResponse, error)
 	mustEmbedUnimplementedPostSeriveServer()
 }
 
@@ -136,14 +149,17 @@ func (UnimplementedPostSeriveServer) CreateComment(context.Context, *Comment) (*
 func (UnimplementedPostSeriveServer) CreateLike(context.Context, *Like) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateLike not implemented")
 }
-func (UnimplementedPostSeriveServer) DeletePost(context.Context, *Delete) (*Response, error) {
+func (UnimplementedPostSeriveServer) DeletePost(context.Context, *DeletePostRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePost not implemented")
 }
-func (UnimplementedPostSeriveServer) DeleteComment(context.Context, *Delete) (*Response, error) {
+func (UnimplementedPostSeriveServer) DeleteComment(context.Context, *DeleteCommentRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteComment not implemented")
 }
-func (UnimplementedPostSeriveServer) DeleteLike(context.Context, *Delete) (*Response, error) {
+func (UnimplementedPostSeriveServer) DeleteLike(context.Context, *DeleteLikeRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteLike not implemented")
+}
+func (UnimplementedPostSeriveServer) GetPosts(context.Context, *GetPostRequest) (*GetPostResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPosts not implemented")
 }
 func (UnimplementedPostSeriveServer) mustEmbedUnimplementedPostSeriveServer() {}
 func (UnimplementedPostSeriveServer) testEmbeddedByValue()                    {}
@@ -221,7 +237,7 @@ func _PostSerive_CreateLike_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 func _PostSerive_DeletePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Delete)
+	in := new(DeletePostRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -233,13 +249,13 @@ func _PostSerive_DeletePost_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: PostSerive_DeletePost_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PostSeriveServer).DeletePost(ctx, req.(*Delete))
+		return srv.(PostSeriveServer).DeletePost(ctx, req.(*DeletePostRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _PostSerive_DeleteComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Delete)
+	in := new(DeleteCommentRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -251,13 +267,13 @@ func _PostSerive_DeleteComment_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: PostSerive_DeleteComment_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PostSeriveServer).DeleteComment(ctx, req.(*Delete))
+		return srv.(PostSeriveServer).DeleteComment(ctx, req.(*DeleteCommentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _PostSerive_DeleteLike_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Delete)
+	in := new(DeleteLikeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -269,7 +285,25 @@ func _PostSerive_DeleteLike_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: PostSerive_DeleteLike_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PostSeriveServer).DeleteLike(ctx, req.(*Delete))
+		return srv.(PostSeriveServer).DeleteLike(ctx, req.(*DeleteLikeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PostSerive_GetPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostSeriveServer).GetPosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PostSerive_GetPosts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostSeriveServer).GetPosts(ctx, req.(*GetPostRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -304,6 +338,10 @@ var PostSerive_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteLike",
 			Handler:    _PostSerive_DeleteLike_Handler,
+		},
+		{
+			MethodName: "GetPosts",
+			Handler:    _PostSerive_GetPosts_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
