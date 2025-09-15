@@ -12,13 +12,16 @@ import (
 
 func LoadConfig() (models.Config, error) {
 	config := models.Config{
-		DBHost:     os.Getenv("DB_HOST"),
-		DBPort:     os.Getenv("DB_PORT"),
-		DBUser:     os.Getenv("DB_USER"),
-		DBPassword: os.Getenv("DB_PASSWORD"),
-		DBName:     os.Getenv("DB_NAME"),
-		ServerPort: os.Getenv("SERVER_PORT"),
-		ServerHost: os.Getenv("SERVER_HOST"),
+		DBHost:        os.Getenv("DB_HOST"),
+		DBPort:        os.Getenv("DB_PORT"),
+		DBUser:        os.Getenv("DB_USER"),
+		DBPassword:    os.Getenv("DB_PASSWORD"),
+		DBName:        os.Getenv("DB_NAME"),
+		ServerPort:    os.Getenv("SERVER_PORT"),
+		ServerHost:    os.Getenv("SERVER_HOST"),
+		CachePassword: os.Getenv("CACHE_PASSWORD"),
+		CacheHost:     os.Getenv("CACHE_HOST"),
+		CachePort:     os.Getenv("CACHE_PORT"),
 	}
 	return config, nil
 }

@@ -17,7 +17,7 @@ func main() {
 		log.Fatal("Failed To intialize Database Connection: ", err.Error())
 	}
 	postRepo := postRepo.NewPostgresRepo(db)
-	cachedRepo := cachedRepo.NewRedisRepo(postRepo, config.CacheADDR, config.CachePassword)
+	cachedRepo := cachedRepo.NewRedisRepo(postRepo, config.CacheHost, config.CachePort, config.CachePassword)
 	postService := NewPostService(postRepo, cachedRepo, config)
 	log.Fatal(postService.start())
 }

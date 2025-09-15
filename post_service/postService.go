@@ -91,12 +91,11 @@ func (ps *postService) CreateLike(ctx context.Context, req *pb.Like) (*pb.Respon
 	}, nil
 }
 
-func (ps *postService) DeletePost(ctx context.Context, req *pb.Delete) (*pb.Response, error) {
-	id := req.GetId()
-	user_id := req.GetUserId()
+func (ps *postService) DeletePost(ctx context.Context, req *pb.DeletePostRequest) (*pb.Response, error) {
+	id := req.GetPostId()
 	err := ps.presistanceDB.DeletePost(ctx, id)
 	if err != nil {
-		log.Printf("Failed to delete post{%v} for user{%v}: %v\n", id, user_id, err.Error())
+		log.Printf("Failed to delete post{%v}: %v\n", id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to Delete Post Due to Internal Issues")
 	}
 
@@ -112,13 +111,12 @@ func (ps *postService) DeletePost(ctx context.Context, req *pb.Delete) (*pb.Resp
 		Message: "Post Deleted Successfully",
 	}, nil
 }
-func (ps *postService) DeleteComment(ctx context.Context, req *pb.Delete) (*pb.Response, error) {
-	id := req.GetId()
-	user_id := req.GetUserId()
+func (ps *postService) DeleteComment(ctx context.Context, req *pb.DeleteCommentRequest) (*pb.Response, error) {
+	id := req.GetCommentId()
 
 	err := ps.presistanceDB.DeleteComment(ctx, id)
 	if err != nil {
-		log.Printf("Failed to delete Comment{%v} for user{%v}: %v\n", id, user_id, err.Error())
+		log.Printf("Failed to delete Comment{%v}: %v\n", id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to Delete Comment Due to Internal Issues")
 	}
 	return &pb.Response{
@@ -126,8 +124,8 @@ func (ps *postService) DeleteComment(ctx context.Context, req *pb.Delete) (*pb.R
 	}, nil
 }
 
-func (ps *postService) DeleteLike(ctx context.Context, req *pb.Delete) (*pb.Response, error) {
-	id := req.GetId()
+func (ps *postService) DeleteLike(ctx context.Context, req *pb.DeleteLikeRequest) (*pb.Response, error) {
+	id := req.GetPostId()
 	user_id := req.GetUserId()
 
 	err := ps.presistanceDB.DeleteLike(ctx, id, user_id)
