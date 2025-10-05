@@ -111,6 +111,7 @@ func (ps *postService) DeletePost(ctx context.Context, req *pb.DeletePostRequest
 		Message: "Post Deleted Successfully",
 	}, nil
 }
+
 func (ps *postService) DeleteComment(ctx context.Context, req *pb.DeleteCommentRequest) (*pb.Response, error) {
 	id := req.GetCommentId()
 

@@ -1,5 +1,13 @@
 version: '3.8'
 
+networks:
+  redis_cluster_net:
+    driver: bridge
+  postgres_net:
+    driver: bridge
+  app_net:
+    driver: bridge
+
 services:
   post_service:
     build:
@@ -14,11 +22,15 @@ services:
       - DB_NAME=postdb
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=50051
-      - CACHE_ADDR=redis
+      - CACHE_ADDR=redis-node-1
       - CACHE_PORT=6379
-      - CACHE_PASSWORD=mypassword
     ports:
       - 50051:50051
+    networks:
+      - app_net
+      - postgres_net
+      - redis_cluster_net
+
   kafka:
     image: docker.io/bitnami/kafka:latest
     container_name: kafka
@@ -36,8 +48,8 @@ services:
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-    depends_on:
-      - postgres
+    networks:
+      - app_net
 
   connect:
     image: debezium/connect:3.0.0.Final
@@ -50,10 +62,10 @@ services:
       - CONFIG_STORAGE_TOPIC=connect_configs
       - OFFSET_STORAGE_TOPIC=connect_offsets
       - STATUS_STORAGE_TOPIC=connect_status
-    # volumes:
-    # - $PWD/jars:/kafka/connect/debezium-connector-postgres
     depends_on:
       - kafka
+    networks:
+      - app_net
 
   postgres:
     image: postgres:17
@@ -67,21 +79,82 @@ services:
       POSTGRES_DB: postdb
       POSTGRES_HOST: postgres
     volumes:
-      - ./data:/var/lib/postgresql/data
-      - ./initdb:/docker-entrypoint-initdb.d
-    command: postgres -c wal_level=logical -c max_wal_senders=5 -c max_replication_slots=5
+      - ./primary_data:/var/lib/postgresql/data
+      - ./primary_init:/docker-entrypoint-initdb.d
+    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
     depends_on:
       - post_service
-  redis:
-    image: bitnami/redis:latest
-    container_name: redis
-    ports:
-       - 6379:6379
-    environment:
-      - REDIS_AOF_ENABLED=no
-      - REDIS_PASSWORD=mypassword
+    networks:
+      - postgres_net
+
+  # postgres_secondary:
+  #   image: postgres:17
+  #   container_name: postgres_secondary
+  #   restart: always
+  #   ports:
+  #     - 5433:5433
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: mypassword
+  #     PGPASSWORD: '12345'
+  #   volumes:
+  #     - ./secondary_data:/var/lib/postgresql/data
+  #     - ./standby_init:/docker-entrypoint-initdb.d
+  #   depends_on:
+  #     - post_service
+  #   networks:
+  #     - postgres_net
+
+
+  redis-node-1: &redis-node-template
+    image:  redis:7.2.11-alpine3.21
+    command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
-      - ./redis_data:/bitnami/redis/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - 7001:6379
+    networks:
+      - redis_cluster_net
+
+  redis-node-2:
+    <<: *redis-node-template
+    ports:
+      - 7002:6379
+
+  redis-node-3:
+    <<: *redis-node-template
+    ports:
+      - 7003:6379
+
+  redis-node-4:
+    <<: *redis-node-template
+    ports:
+      - 7004:6379
+  redis-node-5:
+    <<: *redis-node-template
+    ports:
+      - 7005:6379
+
+  redis-node-6:
+    <<: *redis-node-template
+    ports:
+      - 7006:6379
+
+  redis-cluster-creator:
+    image: redis:7.2.11-alpine3.21
+    command: > 
+      sh -c "sleep 10 && echo 'yes' | redis-cli --cluster create redis-node-1:6379 redis-node-2:6379 redis-node-3:6379 redis-node-4:6379 redis-node-5:6379 redis-node-6:6379 --cluster-replicas 1"
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+      - redis-node-5
+      - redis-node-6
+    networks:
+      - redis_cluster_net
+
+
 volumes:
   kafka_data:
     driver: local

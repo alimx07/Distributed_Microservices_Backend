@@ -34,7 +34,7 @@ func NewRedisRepo(repo postRepo.PersistenceDB, host, port, pass string) *redisRe
 
 func (rs *redisRepo) CachePost(ctx context.Context, post models.CachedPost) error {
 	data, _ := json.Marshal(post)
-	err := rs.redisClient.Set(ctx, postKey(post.Id), data, 24*time.Hour).Err()
+	err := rs.redisClient.Set(ctx, postKey(post.Id), data, 12*time.Hour).Err()
 	return err
 }
 
@@ -45,28 +45,19 @@ func (rs *redisRepo) DeletePost(ctx context.Context, id int64) error {
 }
 
 func (rs *redisRepo) UpdateLikesCounter(ctx context.Context, id int64) {
-	rs.redisClient.HIncrBy(ctx, counterKey(id), "likes", 1)
-	rs.redisClient.SAdd(ctx, "counters:set", counterKey(id))
+	pipe := rs.redisClient.Pipeline()
+	pipe.HIncrBy(ctx, counterKey(id), "likes", 1)
+	pipe.SAdd(ctx, "counters:set", counterKey(id))
+	pipe.Exec(ctx)
 }
 
 func (rs *redisRepo) UpdateCommentsCounter(ctx context.Context, id int64) {
-	rs.redisClient.HIncrBy(ctx, counterKey(id), "comments", 1)
-	rs.redisClient.SAdd(ctx, "counters:set", counterKey(id))
+	pipe := rs.redisClient.Pipeline()
+	pipe.HIncrBy(ctx, counterKey(id), "comments", 1)
+	pipe.SAdd(ctx, "counters:set", counterKey(id))
+	pipe.Exec(ctx)
 }
 
-// func (rs *redisRepo) GetCounters(ctx context.Context , keys []string) *redis.SliceCmd {
-
-// }
-
-// func (rs *redisRepo) GetCommentsCounter(ctx context.Context , keys []string) *redis.SliceCmd {
-
-// 	for _ , key := range keys {
-// 		commentKeys[i] = fmt.Sprintf("%v:comments" , key)
-// 	}
-// 	return rs.redisClient.MGet(ctx , commentKeys...)
-// }
-
-// This function will be moved later
 func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, error) {
 	if len(ids) == 0 {
 		return []models.Post{}, nil
@@ -110,7 +101,7 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 		}
 		cnt, err := cmds[i].Result()
 
-		// in cache of cache miss
+		// in case of cache miss
 		// instead on go to db for this counter only
 		// store it in map , go to db once get all couters
 		// and map counters back to thier posts
