@@ -67,10 +67,9 @@ services:
     networks:
       - app_net
 
-  postgres:
+  postgres_primary:
     image: postgres:17
-    container_name: postgres
-    restart: always
+    container_name: postgres_primary
     ports:
       - 5432:5432
     environment:
@@ -81,29 +80,28 @@ services:
     volumes:
       - ./primary_data:/var/lib/postgresql/data
       - ./primary_init:/docker-entrypoint-initdb.d
-    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
     depends_on:
       - post_service
     networks:
       - postgres_net
 
-  # postgres_secondary:
-  #   image: postgres:17
-  #   container_name: postgres_secondary
-  #   restart: always
-  #   ports:
-  #     - 5433:5433
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: mypassword
-  #     PGPASSWORD: '12345'
-  #   volumes:
-  #     - ./secondary_data:/var/lib/postgresql/data
-  #     - ./standby_init:/docker-entrypoint-initdb.d
-  #   depends_on:
-  #     - post_service
-  #   networks:
-  #     - postgres_net
+  postgres_secondary:
+    image: postgres:17
+    container_name: postgres_secondary
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mypassword
+      PGDATA: /var/lib/postgresql/data
+      PGPASSWORD: 12345
+    volumes:
+      - ./secondary_data:/var/lib/postgresql/data
+      - ./secondary_init:/docker-entrypoint-initdb.d
+    depends_on:
+      - post_service
+    networks:
+      - postgres_net
 
 
   redis-node-1: &redis-node-template
