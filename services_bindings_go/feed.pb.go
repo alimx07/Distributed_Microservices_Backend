@@ -24,8 +24,8 @@ const (
 type GetFeedRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	PageSize      int32                  `protobuf:"varint,2,opt,name=pageSize,proto3" json:"pageSize,omitempty"`
-	Cursor        string                 `protobuf:"bytes,3,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	Cursor        string                 `protobuf:"bytes,2,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	PageSize      int32                  `protobuf:"varint,3,opt,name=pageSize,proto3" json:"pageSize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -67,18 +67,18 @@ func (x *GetFeedRequest) GetUserId() int64 {
 	return 0
 }
 
-func (x *GetFeedRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
 func (x *GetFeedRequest) GetCursor() string {
 	if x != nil {
 		return x.Cursor
 	}
 	return ""
+}
+
+func (x *GetFeedRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
 }
 
 type GetFeedResponse struct {
@@ -141,9 +141,9 @@ const file_feed_proto_rawDesc = "" +
 	"feed.proto\x1a\n" +
 	"post.proto\"]\n" +
 	"\x0eGetFeedRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1a\n" +
-	"\bpageSize\x18\x02 \x01(\x05R\bpageSize\x12\x16\n" +
-	"\x06cursor\x18\x03 \x01(\tR\x06cursor\"O\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x16\n" +
+	"\x06cursor\x18\x02 \x01(\tR\x06cursor\x12\x1a\n" +
+	"\bpageSize\x18\x03 \x01(\x05R\bpageSize\"O\n" +
 	"\x0fGetFeedResponse\x12\x1b\n" +
 	"\x05posts\x18\x01 \x03(\v2\x05.PostR\x05posts\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
