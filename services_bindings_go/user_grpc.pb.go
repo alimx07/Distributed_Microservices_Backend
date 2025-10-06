@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_Register_FullMethodName    = "/UserService/Register"
-	UserService_Login_FullMethodName       = "/UserService/Login"
-	UserService_GetUserData_FullMethodName = "/UserService/GetUserData"
+	UserService_Register_FullMethodName     = "/UserService/Register"
+	UserService_Login_FullMethodName        = "/UserService/Login"
+	UserService_GetUsersData_FullMethodName = "/UserService/GetUsersData"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -30,7 +30,7 @@ const (
 type UserServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
-	GetUserData(ctx context.Context, in *GetUserDataRequest, opts ...grpc.CallOption) (*GetUserDataResponse, error)
+	GetUsersData(ctx context.Context, in *GetUsersDataRequest, opts ...grpc.CallOption) (*GetUsersDataResponse, error)
 }
 
 type userServiceClient struct {
@@ -61,10 +61,10 @@ func (c *userServiceClient) Login(ctx context.Context, in *LoginRequest, opts ..
 	return out, nil
 }
 
-func (c *userServiceClient) GetUserData(ctx context.Context, in *GetUserDataRequest, opts ...grpc.CallOption) (*GetUserDataResponse, error) {
+func (c *userServiceClient) GetUsersData(ctx context.Context, in *GetUsersDataRequest, opts ...grpc.CallOption) (*GetUsersDataResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetUserDataResponse)
-	err := c.cc.Invoke(ctx, UserService_GetUserData_FullMethodName, in, out, cOpts...)
+	out := new(GetUsersDataResponse)
+	err := c.cc.Invoke(ctx, UserService_GetUsersData_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (c *userServiceClient) GetUserData(ctx context.Context, in *GetUserDataRequ
 type UserServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
-	GetUserData(context.Context, *GetUserDataRequest) (*GetUserDataResponse, error)
+	GetUsersData(context.Context, *GetUsersDataRequest) (*GetUsersDataResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -94,8 +94,8 @@ func (UnimplementedUserServiceServer) Register(context.Context, *RegisterRequest
 func (UnimplementedUserServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedUserServiceServer) GetUserData(context.Context, *GetUserDataRequest) (*GetUserDataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUserData not implemented")
+func (UnimplementedUserServiceServer) GetUsersData(context.Context, *GetUsersDataRequest) (*GetUsersDataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUsersData not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -154,20 +154,20 @@ func _UserService_Login_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_GetUserData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetUserDataRequest)
+func _UserService_GetUsersData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUsersDataRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UserServiceServer).GetUserData(ctx, in)
+		return srv.(UserServiceServer).GetUsersData(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UserService_GetUserData_FullMethodName,
+		FullMethod: UserService_GetUsersData_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).GetUserData(ctx, req.(*GetUserDataRequest))
+		return srv.(UserServiceServer).GetUsersData(ctx, req.(*GetUsersDataRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -188,8 +188,8 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UserService_Login_Handler,
 		},
 		{
-			MethodName: "GetUserData",
-			Handler:    _UserService_GetUserData_Handler,
+			MethodName: "GetUsersData",
+			Handler:    _UserService_GetUsersData_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
