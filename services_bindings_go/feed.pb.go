@@ -83,7 +83,7 @@ func (x *GetFeedRequest) GetPageSize() int32 {
 
 type GetFeedResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Posts         []*Post                `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
+	Posts         []*FeedPost            `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
 	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -119,7 +119,7 @@ func (*GetFeedResponse) Descriptor() ([]byte, []int) {
 	return file_feed_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GetFeedResponse) GetPosts() []*Post {
+func (x *GetFeedResponse) GetPosts() []*FeedPost {
 	if x != nil {
 		return x.Posts
 	}
@@ -133,7 +133,7 @@ func (x *GetFeedResponse) GetNextCursor() string {
 	return ""
 }
 
-type Post struct {
+type FeedPost struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
 	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
@@ -144,20 +144,20 @@ type Post struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Post) Reset() {
-	*x = Post{}
+func (x *FeedPost) Reset() {
+	*x = FeedPost{}
 	mi := &file_feed_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Post) String() string {
+func (x *FeedPost) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Post) ProtoMessage() {}
+func (*FeedPost) ProtoMessage() {}
 
-func (x *Post) ProtoReflect() protoreflect.Message {
+func (x *FeedPost) ProtoReflect() protoreflect.Message {
 	mi := &file_feed_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -169,40 +169,40 @@ func (x *Post) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Post.ProtoReflect.Descriptor instead.
-func (*Post) Descriptor() ([]byte, []int) {
+// Deprecated: Use FeedPost.ProtoReflect.Descriptor instead.
+func (*FeedPost) Descriptor() ([]byte, []int) {
 	return file_feed_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Post) GetUsername() string {
+func (x *FeedPost) GetUsername() string {
 	if x != nil {
 		return x.Username
 	}
 	return ""
 }
 
-func (x *Post) GetContent() string {
+func (x *FeedPost) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
 	return ""
 }
 
-func (x *Post) GetCreatedAt() int64 {
+func (x *FeedPost) GetCreatedAt() int64 {
 	if x != nil {
 		return x.CreatedAt
 	}
 	return 0
 }
 
-func (x *Post) GetLikesCount() int64 {
+func (x *FeedPost) GetLikesCount() int64 {
 	if x != nil {
 		return x.LikesCount
 	}
 	return 0
 }
 
-func (x *Post) GetCommentsCount() int64 {
+func (x *FeedPost) GetCommentsCount() int64 {
 	if x != nil {
 		return x.CommentsCount
 	}
@@ -218,12 +218,12 @@ const file_feed_proto_rawDesc = "" +
 	"\x0eGetFeedRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x16\n" +
 	"\x06cursor\x18\x02 \x01(\tR\x06cursor\x12\x1a\n" +
-	"\bpageSize\x18\x03 \x01(\x05R\bpageSize\"O\n" +
-	"\x0fGetFeedResponse\x12\x1b\n" +
-	"\x05posts\x18\x01 \x03(\v2\x05.PostR\x05posts\x12\x1f\n" +
+	"\bpageSize\x18\x03 \x01(\x05R\bpageSize\"S\n" +
+	"\x0fGetFeedResponse\x12\x1f\n" +
+	"\x05posts\x18\x01 \x03(\v2\t.FeedPostR\x05posts\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\"\xa3\x01\n" +
-	"\x04Post\x12\x1a\n" +
+	"nextCursor\"\xa7\x01\n" +
+	"\bFeedPost\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1d\n" +
 	"\n" +
@@ -250,10 +250,10 @@ var file_feed_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_feed_proto_goTypes = []any{
 	(*GetFeedRequest)(nil),  // 0: GetFeedRequest
 	(*GetFeedResponse)(nil), // 1: GetFeedResponse
-	(*Post)(nil),            // 2: Post
+	(*FeedPost)(nil),        // 2: FeedPost
 }
 var file_feed_proto_depIdxs = []int32{
-	2, // 0: GetFeedResponse.posts:type_name -> Post
+	2, // 0: GetFeedResponse.posts:type_name -> FeedPost
 	0, // 1: FeedService.GetFeed:input_type -> GetFeedRequest
 	1, // 2: FeedService.GetFeed:output_type -> GetFeedResponse
 	2, // [2:3] is the sub-list for method output_type
