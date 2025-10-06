@@ -1,0 +1,72 @@
+version: '3.8'
+
+networks:
+  redis_cluster_net:
+    driver: bridge
+  app_net: 
+    driver: bridge
+services:
+  feed_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: feed_service:1.0.0
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=50051
+      - CACHE_ADDR=redis
+      - CACHE_PORT=6379
+      - CACHE_PASSWORD=mypassword
+    ports:
+      - 50051:50051
+      - ./redis_data:/bitnami/redis/data
+    networks:
+      - app_net
+      - redis_cluster_net
+
+  redis-node-1: &redis-node-template
+    image:  redis:7.2.11-alpine3.21
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - 7001:6379
+    networks:
+      - redis_cluster_net
+  redis-node-2:
+    <<: *redis-node-template
+    ports:
+      - 7002:6379
+
+  redis-node-3:
+    <<: *redis-node-template
+    ports:
+      - 7003:6379
+
+  redis-node-4:
+    <<: *redis-node-template
+    ports:
+      - 7004:6379
+  redis-node-5:
+    <<: *redis-node-template
+    ports:
+      - 7005:6379
+
+  redis-node-6:
+    <<: *redis-node-template
+    ports:
+      - 7006:6379
+
+  redis-cluster-creator:
+    image: redis:7.2.11-alpine3.21
+    command: > 
+      sh -c "sleep 10 && echo 'yes' | redis-cli --cluster create redis-node-1:6379 redis-node-2:6379 redis-node-3:6379 redis-node-4:6379 redis-node-5:6379 redis-node-6:6379 --cluster-replicas 1"
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+      - redis-node-5
+      - redis-node-6
+    networks:
+      - redis_cluster_net

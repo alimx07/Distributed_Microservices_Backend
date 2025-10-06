@@ -5,6 +5,7 @@ type KafkaConfig struct {
 	GroupID          string
 	OffsetReset      string
 	FetchMinBytes    string
+	Topics           []string
 }
 
 type RedisConfig struct {
@@ -14,8 +15,11 @@ type RedisConfig struct {
 }
 
 type ServerConfig struct {
-	ServerHost string
-	ServerPort string
+	ServerHost    string
+	ServerPort    string
+	PostService   string
+	UserService   string
+	FollowService string
 }
 type FeedItem struct {
 	PostId     int64 `json:"post_id"`
@@ -24,6 +28,16 @@ type FeedItem struct {
 }
 
 type Cursor struct {
-	UserId int64
-	Cursor string
+	UserId   int64
+	Cursor   string
+	PageSize int32
+}
+
+type Post struct {
+	UserName       string
+	UserID         int32
+	Content        string
+	Created_at     int64
+	Likes_count    int64
+	Comments_count int64
 }
