@@ -283,7 +283,7 @@ func (x *LoginResponse) GetToken() string {
 
 type GetUsersDataRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Userid        []string               `protobuf:"bytes,1,rep,name=userid,proto3" json:"userid,omitempty"`
+	Userid        []int32                `protobuf:"varint,1,rep,packed,name=userid,proto3" json:"userid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -318,7 +318,7 @@ func (*GetUsersDataRequest) Descriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *GetUsersDataRequest) GetUserid() []string {
+func (x *GetUsersDataRequest) GetUserid() []int32 {
 	if x != nil {
 		return x.Userid
 	}
@@ -327,7 +327,8 @@ func (x *GetUsersDataRequest) GetUserid() []string {
 
 type GetUsersDataResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Username      []string               `protobuf:"bytes,1,rep,name=username,proto3" json:"username,omitempty"`
+	UserID        []string               `protobuf:"bytes,2,rep,name=userID,proto3" json:"userID,omitempty"` // other data can be added here
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -362,11 +363,18 @@ func (*GetUsersDataResponse) Descriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GetUsersDataResponse) GetUsername() string {
+func (x *GetUsersDataResponse) GetUsername() []string {
 	if x != nil {
 		return x.Username
 	}
-	return ""
+	return nil
+}
+
+func (x *GetUsersDataResponse) GetUserID() []string {
+	if x != nil {
+		return x.UserID
+	}
+	return nil
 }
 
 var File_user_proto protoreflect.FileDescriptor
@@ -391,9 +399,10 @@ const file_user_proto_rawDesc = "" +
 	"\rLoginResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"-\n" +
 	"\x13GetUsersDataRequest\x12\x16\n" +
-	"\x06userid\x18\x01 \x03(\tR\x06userid\"2\n" +
+	"\x06userid\x18\x01 \x03(\x05R\x06userid\"J\n" +
 	"\x14GetUsersDataResponse\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername2\xa9\x01\n" +
+	"\busername\x18\x01 \x03(\tR\busername\x12\x16\n" +
+	"\x06userID\x18\x02 \x03(\tR\x06userID2\xa9\x01\n" +
 	"\vUserService\x121\n" +
 	"\bRegister\x12\x10.RegisterRequest\x1a\x11.RegisterResponse\"\x00\x12(\n" +
 	"\x05Login\x12\r.LoginRequest\x1a\x0e.LoginResponse\"\x00\x12=\n" +

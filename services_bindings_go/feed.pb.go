@@ -133,13 +133,88 @@ func (x *GetFeedResponse) GetNextCursor() string {
 	return ""
 }
 
+type Post struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LikesCount    int64                  `protobuf:"varint,4,opt,name=likes_count,json=likesCount,proto3" json:"likes_count,omitempty"`
+	CommentsCount int64                  `protobuf:"varint,5,opt,name=comments_count,json=commentsCount,proto3" json:"comments_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Post) Reset() {
+	*x = Post{}
+	mi := &file_feed_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Post) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Post) ProtoMessage() {}
+
+func (x *Post) ProtoReflect() protoreflect.Message {
+	mi := &file_feed_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Post.ProtoReflect.Descriptor instead.
+func (*Post) Descriptor() ([]byte, []int) {
+	return file_feed_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Post) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *Post) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *Post) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *Post) GetLikesCount() int64 {
+	if x != nil {
+		return x.LikesCount
+	}
+	return 0
+}
+
+func (x *Post) GetCommentsCount() int64 {
+	if x != nil {
+		return x.CommentsCount
+	}
+	return 0
+}
+
 var File_feed_proto protoreflect.FileDescriptor
 
 const file_feed_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"feed.proto\x1a\n" +
-	"post.proto\"]\n" +
+	"feed.proto\"]\n" +
 	"\x0eGetFeedRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x16\n" +
 	"\x06cursor\x18\x02 \x01(\tR\x06cursor\x12\x1a\n" +
@@ -147,7 +222,15 @@ const file_feed_proto_rawDesc = "" +
 	"\x0fGetFeedResponse\x12\x1b\n" +
 	"\x05posts\x18\x01 \x03(\v2\x05.PostR\x05posts\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor2;\n" +
+	"nextCursor\"\xa3\x01\n" +
+	"\x04Post\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x03 \x01(\x03R\tcreatedAt\x12\x1f\n" +
+	"\vlikes_count\x18\x04 \x01(\x03R\n" +
+	"likesCount\x12%\n" +
+	"\x0ecomments_count\x18\x05 \x01(\x03R\rcommentsCount2;\n" +
 	"\vFeedService\x12,\n" +
 	"\aGetFeed\x12\x0f.GetFeedRequest\x1a\x10.GetFeedResponseB\x17Z\x15/services_bindings_gob\x06proto3"
 
@@ -163,7 +246,7 @@ func file_feed_proto_rawDescGZIP() []byte {
 	return file_feed_proto_rawDescData
 }
 
-var file_feed_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_feed_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_feed_proto_goTypes = []any{
 	(*GetFeedRequest)(nil),  // 0: GetFeedRequest
 	(*GetFeedResponse)(nil), // 1: GetFeedResponse
@@ -185,14 +268,13 @@ func file_feed_proto_init() {
 	if File_feed_proto != nil {
 		return
 	}
-	file_post_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_feed_proto_rawDesc), len(file_feed_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

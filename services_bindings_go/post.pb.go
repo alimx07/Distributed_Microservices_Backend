@@ -26,6 +26,8 @@ type Post struct {
 	UserId        int32                  `protobuf:"varint,1,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	Content       string                 `protobuf:"bytes,2,opt,name=Content,proto3" json:"Content,omitempty"`
 	CreatedAt     int64                  `protobuf:"varint,3,opt,name=CreatedAt,proto3" json:"CreatedAt,omitempty"`
+	LikesCount    int64                  `protobuf:"varint,4,opt,name=likes_count,json=likesCount,proto3" json:"likes_count,omitempty"`
+	CommentsCount int64                  `protobuf:"varint,5,opt,name=comments_count,json=commentsCount,proto3" json:"comments_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -77,6 +79,20 @@ func (x *Post) GetContent() string {
 func (x *Post) GetCreatedAt() int64 {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *Post) GetLikesCount() int64 {
+	if x != nil {
+		return x.LikesCount
+	}
+	return 0
+}
+
+func (x *Post) GetCommentsCount() int64 {
+	if x != nil {
+		return x.CommentsCount
 	}
 	return 0
 }
@@ -478,11 +494,14 @@ var File_post_proto protoreflect.FileDescriptor
 const file_post_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"post.proto\"V\n" +
+	"post.proto\"\x9e\x01\n" +
 	"\x04Post\x12\x16\n" +
 	"\x06UserId\x18\x01 \x01(\x05R\x06UserId\x12\x18\n" +
 	"\aContent\x18\x02 \x01(\tR\aContent\x12\x1c\n" +
-	"\tCreatedAt\x18\x03 \x01(\x03R\tCreatedAt\"q\n" +
+	"\tCreatedAt\x18\x03 \x01(\x03R\tCreatedAt\x12\x1f\n" +
+	"\vlikes_count\x18\x04 \x01(\x03R\n" +
+	"likesCount\x12%\n" +
+	"\x0ecomments_count\x18\x05 \x01(\x03R\rcommentsCount\"q\n" +
 	"\aComment\x12\x16\n" +
 	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\x12\x16\n" +
 	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\x12\x18\n" +
