@@ -1,6 +1,6 @@
 CREATE ROLE logical_rep WITH REPLICATION LOGIN PASSWORD '1234';
 
-CREATE PUBLICATION my_pub FOR ALL TABLES;
+CREATE PUBLICATION my_pub FOR TABLE posts(user_id , post_id , created_at);
 
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO logical_rep;
 

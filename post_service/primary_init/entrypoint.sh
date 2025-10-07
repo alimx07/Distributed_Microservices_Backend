@@ -13,7 +13,6 @@ wal_keep_size = 128MB
 hot_standby = on
 EOF
 
-# 2) Allow replication connections (adjust CIDR to your network)
 echo "host replication physical_rep 0.0.0.0/0 md5" >> "$PGDATA/pg_hba.conf"
 
 
