@@ -18,6 +18,7 @@ Services:
 - Post Service
   - Posts, comments, likes
   - PostgreSQL with a read replica
+  - Outbox Pattern by Using Debezium and Kafka
 
 - Follow Service
   - Follow relationships
