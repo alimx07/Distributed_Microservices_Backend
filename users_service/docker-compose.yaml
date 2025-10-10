@@ -1,0 +1,101 @@
+version: '3.8'
+
+networks:
+  redis_cluster_net:
+    driver: bridge
+  postgres_net:
+    driver: bridge
+  app_net:
+    driver: bridge
+
+services:
+  user_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: user_service:1.0.0
+    environment:
+      - DB_HOST=postgres_primary
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=mypassword
+      - DB_NAME=userdb
+      - DB_REPLICA_HOST=postgres_secondary
+      - DB_REPLICA_PORT=5432
+      - DB_REPLICA_USER=postgres
+      - DB_REPLICA_PASSWORD=mypassword
+      - DB_REPLICA_NAME=userdb
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=50051
+      - CACHE_ADDR=redis-node-1
+      - CACHE_PORT=6379
+    ports:
+      - 50051:50051
+    networks:
+      - app_net
+      - postgres_net
+      - redis_cluster_net
+
+  postgres_primary:
+    image: postgres:17
+    container_name: postgres_primary
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: userdb
+      POSTGRES_HOST: postgres
+    volumes:
+      - ./primary_data:/var/lib/postgresql/data
+      - ./primary_init:/docker-entrypoint-initdb.d
+    depends_on:
+      - user_service
+    networks:
+      - postgres_net
+
+  postgres_secondary:
+    image: postgres:17
+    container_name: postgres_secondary
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mypassword
+      PGDATA: /var/lib/postgresql/data
+      PGPASSWORD: 12345
+    volumes:
+      - ./secondary_data:/var/lib/postgresql/data
+      - ./secondary_init:/docker-entrypoint-initdb.d
+    depends_on:
+      - user_service
+    networks:
+      - postgres_net
+
+
+# Question: How many nodes needed here ?
+# From search i found redis instance can handle on avg 100KOps/Sec (depend on hardware)
+# I will go with 1 Node + replica Now and invistigate later on that
+  redis-node-1: &redis-node-template
+    image:  redis:7.2.11-alpine3.21
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - 7001:6379
+    networks:
+      - redis_cluster_net
+
+  redis-node-2:
+    <<: *redis-node-template
+    ports:
+      - 7002:6379
+  redis-cluster-creator:
+    image: redis:7.2.11-alpine3.21
+    command: > 
+      sh -c "sleep 10 && echo 'yes' | redis-cli --cluster create redis-node-1:6379 redis-node-2:6379 --cluster-replicas 1"
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+    networks:
+      - redis_cluster_net
