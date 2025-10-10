@@ -3,12 +3,27 @@ This repository is a practical microservices backend.
 
 
 Services:
-1 - API GATEWAY : Handles User Auth , RateLimiter (using Redis) , Routing and serivces loadbalancing.
-1 - User :  Handles For User data 
-2 - Feed :  Generate UserFeed Using Hybird model of fanout_on_write and fanout_on_read and caches
-3 - Post :  Hanles Posts Data (posts , comments and likes) using Postgres with replica
-4 - Follow : Handles all follow relations
-5 - Chat : Responsable for Chatting in the app using websockets
+- API Gateway
+  - User authentication
+  - Rate limiting (Redis)
+  - Routing and service load balancing
+  - REST/HTTP to gRPC translation
+
+- User Service
+  - User data management
+  - PostgreSQL with a read replica
+- Feed Service
+  - User feed generation using a hybrid of fanout-on-write and fanout-on-read with caches
+
+- Post Service
+  - Posts, comments, likes
+  - PostgreSQL with a read replica
+
+- Follow Service
+  - Follow relationships
+
+- Chat Service
+  - WebSocket-based chat
 
 Core goals:
 - Build a small but realistic system with multiple services, different techs and pragmatic trade-offs.
