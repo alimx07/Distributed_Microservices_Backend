@@ -15,11 +15,16 @@ services:
       dockerfile: Dockerfile
     image: post_service:1.0.0
     environment:
-      - DB_HOST=postgres
+      - DB_HOST=postgres_primary
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=mypassword
       - DB_NAME=postdb
+      - DB_REPLICA_HOST=postgres_secondary
+      - DB_REPLICA_PORT=5432
+      - DB_REPLICA_USER=postgres
+      - DB_REPLICA_PASSWORD=mypassword
+      - DB_REPLICA_NAME=posts_db
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=50051
       - CACHE_ADDR=redis-node-1

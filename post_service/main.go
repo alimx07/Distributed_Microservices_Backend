@@ -12,11 +12,15 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to load config file: ", err.Error())
 	}
-	db, err := InitDB(config)
+
+	primaryDB, replicaDB, err := InitDBConnections(config)
 	if err != nil {
-		log.Fatal("Failed To intialize Database Connection: ", err.Error())
+		log.Fatal("Failed to initialize database connections: ", err.Error())
 	}
-	postRepo := postRepo.NewPostgresRepo(db)
+	defer primaryDB.Close()
+	defer replicaDB.Close()
+
+	postRepo := postRepo.NewPostgresRepo(primaryDB, replicaDB)
 	cachedRepo := cachedRepo.NewRedisRepo(postRepo, config.CacheHost, config.CachePort, config.CachePassword)
 	postService := NewPostService(postRepo, cachedRepo, config)
 	log.Fatal(postService.start())

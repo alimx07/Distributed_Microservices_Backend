@@ -12,11 +12,20 @@ import (
 
 func LoadConfig() (models.Config, error) {
 	config := models.Config{
-		DBHost:        os.Getenv("DB_HOST"),
-		DBPort:        os.Getenv("DB_PORT"),
-		DBUser:        os.Getenv("DB_USER"),
-		DBPassword:    os.Getenv("DB_PASSWORD"),
-		DBName:        os.Getenv("DB_NAME"),
+		// Primary DB
+		DBHost:     os.Getenv("DB_HOST"),
+		DBPort:     os.Getenv("DB_PORT"),
+		DBUser:     os.Getenv("DB_USER"),
+		DBPassword: os.Getenv("DB_PASSWORD"),
+		DBName:     os.Getenv("DB_NAME"),
+
+		// Replica DB
+		DBReplicaHost:     os.Getenv("DB_REPLICA_HOST"),
+		DBReplicaPort:     os.Getenv("DB_REPLICA_PORT"),
+		DBReplicaUser:     os.Getenv("DB_REPLICA_USER"),
+		DBReplicaPassword: os.Getenv("DB_REPLICA_PASSWORD"),
+		DBReplicaName:     os.Getenv("DB_REPLICA_NAME"),
+
 		ServerPort:    os.Getenv("SERVER_PORT"),
 		ServerHost:    os.Getenv("SERVER_HOST"),
 		CachePassword: os.Getenv("CACHE_PASSWORD"),
@@ -26,14 +35,36 @@ func LoadConfig() (models.Config, error) {
 	return config, nil
 }
 
-func InitDB(config models.Config) (*sql.DB, error) {
-	DBpath := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+func InitDBConnections(config models.Config) (*sql.DB, *sql.DB, error) {
+	// Primary connection (for writes)
+	primaryPath := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		config.DBHost, config.DBPort, config.DBUser, config.DBPassword, config.DBName)
 
-	DB, err := sql.Open("postgres", DBpath)
+	primaryDB, err := sql.Open("postgres", primaryPath)
 	if err != nil {
-		log.Println("Failed to Connect with Post_service DB", err.Error())
-		return nil, err
+		log.Println("Failed to connect to primary DB:", err.Error())
+		return nil, nil, err
 	}
-	return DB, nil
+
+	// Replica connection (for reads)
+	replicaPath := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		config.DBReplicaHost, config.DBReplicaPort, config.DBReplicaUser,
+		config.DBReplicaPassword, config.DBReplicaName)
+
+	replicaDB, err := sql.Open("postgres", replicaPath)
+	if err != nil {
+		log.Println("Failed to connect to replica DB:", err.Error())
+		return nil, nil, err
+	}
+
+	//connection pools
+	// TODO:
+	// Pool Numbers may need tunnig later
+	primaryDB.SetMaxOpenConns(15)
+	primaryDB.SetMaxIdleConns(5)
+
+	replicaDB.SetMaxOpenConns(25)
+	replicaDB.SetMaxIdleConns(10)
+
+	return primaryDB, replicaDB, nil
 }

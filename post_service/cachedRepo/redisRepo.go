@@ -72,7 +72,7 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 		cmds[i] = pipe.HGetAll(ctx, counterKey(id))
 	}
 	// From Cache First
-	posts := make([]models.Post, len(ids))
+	posts := make([]models.Post, 0, len(ids))
 	var missedPostIDs []int64
 	var missedCounter []int64
 
@@ -154,8 +154,8 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 			data, _ := json.Marshal(post.CachedPost)
 
 			// populate data back to caches
-			pipe.Set(ctx, fmt.Sprintf("post:%v", post.Id), data, 24*time.Hour)
-			pipe.MSet(ctx, fmt.Sprintf("post:%v:likes", post.Id), post.Likes_count, fmt.Sprintf("post:%v:comments", post.Id), post.Comments_count)
+			pipe.Set(ctx, fmt.Sprintf("post:%v", post.Id), data, 12*time.Hour)
+			pipe.HMSet(ctx, counterKey(post.Id), "likes", post.Likes_count, "comments", post.Comments_count)
 			posts = append(posts, post)
 		}
 		_, err = pipe.Exec(ctx)
@@ -179,7 +179,10 @@ func (rs *redisRepo) SyncCounters() {
 			for {
 				var keys []string
 				var err error
-				keys, cursor, err = rs.redisClient.SScan(rs.ctx, "counters:set", cursor, "post:*:counters", 100).Result()
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				keys, cursor, err = rs.redisClient.SScan(ctx, "counters:set", cursor, "post:*:counters", 100).Result()
 				if err != nil {
 					continue
 				}
@@ -192,8 +195,8 @@ func (rs *redisRepo) SyncCounters() {
 
 					// Get and Delete all keys from cache
 					// now any new likes/comments will be added by updateFuncs and sync in the next cycle
-					// but there is consistency issue if flushing to db failed
-					// rename trick can be used or queue for consistency but i will go with GetDel solution for simplecity now
+					// there is small durability issue if flushing to db failed
+					// rename trick or dead queues can be used to avoid that
 					cmds[key] = pipe.HGetDel(rs.ctx, key, "likes", "comments")
 				}
 				_, err = pipe.Exec(rs.ctx)

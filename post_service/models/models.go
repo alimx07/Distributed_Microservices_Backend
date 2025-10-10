@@ -3,11 +3,20 @@ package models
 import "time"
 
 type Config struct {
-	DBHost        string
-	DBPort        string
-	DBUser        string
-	DBName        string
-	DBPassword    string
+	// Primary (write) database
+	DBHost     string
+	DBPort     string
+	DBUser     string
+	DBName     string
+	DBPassword string
+
+	// Replica (read) database
+	DBReplicaHost     string
+	DBReplicaPort     string
+	DBReplicaUser     string
+	DBReplicaName     string
+	DBReplicaPassword string
+
 	CacheHost     string
 	CachePort     string
 	CachePassword string
