@@ -8,6 +8,9 @@ public class FollowServiceApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(FollowServiceApplication.class, args);
+
+		// Application is now running!
+		// HTTP server listening on port 8080 (FOR HEALTH CHECK ONLY)
 	}
 
 }
