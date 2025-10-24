@@ -37,6 +37,11 @@ public class TokenCacheService {
         return null;
     }
     
+    public Long getRefreshTokenTTL(String refreshToken) {
+        String key = REFRESH_TOKEN_PREFIX + refreshToken;
+        return tokenRedisTemplate.getExpire(key, TimeUnit.SECONDS);
+    }
+    
     public boolean deleteRefreshToken(String refreshToken) {
         String key = REFRESH_TOKEN_PREFIX + refreshToken;
         Boolean deleted = tokenRedisTemplate.delete(key);

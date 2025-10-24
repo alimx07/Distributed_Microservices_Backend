@@ -140,12 +140,31 @@ public class UserServiceImpl implements UserService {
             throw new InvalidCredentialsException();
         }
         
-        // Delete old refresh token from cache
-        // Rotate
-        tokenCacheService.deleteRefreshToken(refreshToken);
+        // Check remaining TTL of refresh token
+        Long remainingTTL = tokenCacheService.getRefreshTokenTTL(refreshToken);
         
         
-        return generateTokenPair(userId);
+        String accessToken = Jwts.builder()
+            .subject(userId)
+            .issuer("users_service")
+            .audience().add("api_gateway").and()
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + jwtExpiration * 1000))
+            .signWith(jwtPrivateKey)
+            .compact();
+        
+        // Keep the same refresh token if it is not expired
+        // Otherwise, rotate it with a new one
+        String newRefreshToken = refreshToken;
+        
+        if (remainingTTL == null || remainingTTL > 0) {
+            // Delete old refresh token and generate new one
+            tokenCacheService.deleteRefreshToken(refreshToken);
+            newRefreshToken = generateRefreshToken();
+            tokenCacheService.storeRefreshToken(userId, newRefreshToken, refreshTokenExpiration);
+        }
+        
+        return new TokenPair(accessToken, newRefreshToken);
     }
     
     @Override

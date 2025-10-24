@@ -23,8 +23,12 @@ services:
       - SECONDARY_DB_URL=jdbc:postgresql://postgres-replica:5432/user_db
       - SECONDARY_DB_USERNAME=postgres
       - SECONDARY_DB_PASSWORD=mypassword
-      - REDIS_HOST=redis
+      - REDIS_HOST=redis-standalone
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DATABASE=0
+      - REDIS_TIMEOUT=60000
+      - REDIS_CLUSTER_NODES=redis-node-1:6379,redis-node-2:6379,redis-node-3:6379,redis-node-4:6379,redis-node-5:6379,redis-node-6:6379
       - JWT_PRIVATE_KEY_PATH=classpath:keys/private.pem
       - JWT_PUBLIC_KEY_PATH=classpath:keys/public.pem
     ports:
