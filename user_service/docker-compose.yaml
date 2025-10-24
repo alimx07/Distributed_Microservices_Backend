@@ -1,0 +1,134 @@
+version: '3.8'
+
+networks:
+  postgres_net:
+    driver: bridge
+  app_net:
+    driver: bridge
+  redis_cluster_net: 
+    driver: bridge
+
+services:
+  user_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: user_service:1.0.0
+    environment:
+      - SERVER_PORT=8080
+      - GRPC_PORT=50051
+      - PRIMARY_DB_URL=jdbc:postgresql://postgres-primary:5432/user_db
+      - PRIMARY_DB_USERNAME=postgres
+      - PRIMARY_DB_PASSWORD=mypassword
+      - SECONDARY_DB_URL=jdbc:postgresql://postgres-replica:5432/user_db
+      - SECONDARY_DB_USERNAME=postgres
+      - SECONDARY_DB_PASSWORD=mypassword
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_PRIVATE_KEY_PATH=classpath:keys/private.pem
+      - JWT_PUBLIC_KEY_PATH=classpath:keys/public.pem
+    ports:
+      - 8080:8080
+      - 50051:50051
+    networks:
+      - app_net
+      - postgres_net
+      - redis_cluster_net
+    depends_on:
+      - postgres_primary
+      - postgres_secondary
+      - redis-standalone
+      - redis-cluster-creator
+
+  postgres_primary:
+    image: postgres:17
+    container_name: postgres_primary
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: userdb
+      POSTGRES_HOST: postgres
+    volumes:
+      - ./primary_data:/var/lib/postgresql/data
+      - ./primary_init:/docker-entrypoint-initdb.d
+    networks:
+      - postgres_net
+
+  postgres_secondary:
+    image: postgres:17
+    container_name: postgres_secondary
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mypassword
+      PGDATA: /var/lib/postgresql/data
+      PGPASSWORD: 12345
+    volumes:
+      - ./secondary_data:/var/lib/postgresql/data
+      - ./secondary_init:/docker-entrypoint-initdb.d
+    networks:
+      - postgres_net
+
+  # Standalone Redis for User Cache
+  redis-standalone:
+    image: redis:7.2.11-alpine3.21
+    container_name: redis-standalone
+    volumes:
+      - ./redis:/data
+    ports:
+      - 7000:6379
+    networks:
+      - app_net
+    command: redis-server --appendonly yes
+
+  # Redis Cluster Nodes for Token Management
+  redis-node-1: &redis-node-template
+    image:  redis:7.2.11-alpine3.21
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - 7001:6379
+    networks:
+      - redis_cluster_net
+
+  redis-node-2:
+    <<: *redis-node-template
+    ports:
+      - 7002:6379
+
+  redis-node-3:
+    <<: *redis-node-template
+    ports:
+      - 7003:6379
+
+  redis-node-4:
+    <<: *redis-node-template
+    ports:
+      - 7004:6379
+  redis-node-5:
+    <<: *redis-node-template
+    ports:
+      - 7005:6379
+
+  redis-node-6:
+    <<: *redis-node-template
+    ports:
+      - 7006:6379
+
+  redis-cluster-creator:
+    image: redis:7.2.11-alpine3.21
+    command: > 
+      sh -c "sleep 10 && echo 'yes' | redis-cli --cluster create redis-node-1:6379 redis-node-2:6379 redis-node-3:6379 redis-node-4:6379 redis-node-5:6379 redis-node-6:6379 --cluster-replicas 1"
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+      - redis-node-5
+      - redis-node-6
+    networks:
+      - redis_cluster_net
