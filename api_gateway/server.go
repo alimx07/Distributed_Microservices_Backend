@@ -1,20 +1,24 @@
 package main
 
 import (
+	"log"
 	"net"
 	"net/http"
+
+	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
 )
 
 type Server struct {
-	config  Config
+	config  *models.AppConfig
 	router  *http.ServeMux
-	handler *ApiHandler
+	handler *Handler
 }
 
-func NewServer(h *ApiHandler, config Config) *Server {
+func NewServer(handler *Handler, config *models.AppConfig) *Server {
 	server := &Server{
 		router:  http.NewServeMux(),
-		handler: h,
+		handler: handler,
+		config:  config,
 	}
 	server.addRoutes()
 	return server
@@ -22,22 +26,31 @@ func NewServer(h *ApiHandler, config Config) *Server {
 
 func (s *Server) start() error {
 	var handler http.Handler = s.router
-	handler = loggingMiddleware(handler)
-	handler = authMiddleware(handler, s.config)
 
 	httpServer := &http.Server{
-		Addr:    net.JoinHostPort(s.config.ServerHost, s.config.ServerPort),
+		Addr:    net.JoinHostPort(s.config.Server.Host, s.config.Server.Port),
 		Handler: handler,
 	}
 
+	log.Printf("API Gateway starting on %s:%s", s.config.Server.Host, s.config.Server.Port)
 	return httpServer.ListenAndServe()
 }
 
-// I will use Static Routing for now
+// Add routes dynamically from configuration
 func (s *Server) addRoutes() {
-	s.router.HandleFunc("/register", s.handler.RegisterHandler)
-	s.router.HandleFunc("/login", s.handler.LoginHandler)
-	s.router.HandleFunc("/profile/", s.handler.GetProfileHandler)
+	// Register all routes from config
+	for _, route := range s.config.Routes {
 
-	// others later...
+		pattern := route.Method + " " + route.Path
+		s.router.HandleFunc(pattern, s.handler.GenericHandler)
+
+		log.Printf("Registered route: %s %s -> %s.%s",
+			route.Method, route.Path, route.GRPCService, route.GRPCMethod)
+	}
+
+	// Health check endpoint
+	s.router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status": "healthy"}`))
+	})
 }

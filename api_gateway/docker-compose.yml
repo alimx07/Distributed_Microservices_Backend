@@ -1,0 +1,55 @@
+version: '3.8'
+
+networks:
+  gateway_net:
+    driver: bridge
+  redis_net:
+    driver: bridge
+
+services:
+  api_gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: api_gateway:1.0.0
+    container_name: api_gateway
+    environment:
+      # Server Configuration
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - PUBLIC_KEY_ADDR=user_service:9090
+      
+      # Redis Configuration (for rate limiting)
+      - REDIS_ADDR=redis:6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gateway_net
+      - redis_net
+    restart: on-failure
+    
+
+  redis:
+    image: redis:7.2.11-alpine3.21
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - redis_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:
+    driver: local

@@ -1,0 +1,167 @@
+server:
+  host: "0.0.0.0"
+  port: "8080"
+  public_key_addr: "localhost:9090"  # User service public key endpoint (overridden by PUBLIC_KEY_ADDR env var in Docker)
+
+
+rate_limiting:
+  rules_config: "rate_rules.json"
+  script_path: "redis_script.lua"
+  addr: "localhost:6379"
+  pool_size: 10
+
+# Service instances for load balancing
+services:
+  user_service:
+    instances:
+      - "localhost:50051"
+      - "localhost:50052"
+      - "localhost:50053"
+    health_check_interval: 5s
+    protoset_path: "_proto/user.protoset"
+  
+  post_service:
+    instances:
+      - "localhost:50061"
+      - "localhost:50062"
+    health_check_interval: 5s
+    protoset_path: "_proto/post.protoset"
+  
+  follow_service:
+    instances:
+      - "localhost:50071"
+      - "localhost:50072"
+    health_check_interval: 5s
+    protoset_path: "_proto/follow.protoset"
+  
+  feed_service:
+    instances:
+      - "localhost:50081"
+    health_check_interval: 5s
+    protoset_path: "_proto/feed.protoset"
+
+# HTTP to gRPC routing configuration
+routes:
+  # User Service Routes
+  - path: "/api/v1/register"
+    method: "POST"
+    service: "user_service"
+    grpc_service: "UserService"
+    grpc_method: "Register"
+    require_auth: false
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/login"
+    method: "POST"
+    service: "user_service"
+    grpc_service: "UserService"
+    grpc_method: "Login"
+    require_auth: false
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/logout"
+    method: "POST"
+    service: "user_service"
+    grpc_service: "UserService"
+    grpc_method: "Logout"
+    require_auth: true
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/refresh"
+    method: "POST"
+    service: "user_service"
+    grpc_service: "UserService"
+    grpc_method: "Refresh"
+    require_auth: false
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/users"
+    method: "GET"
+    service: "user_service"
+    grpc_service: "UserService"
+    grpc_method: "GetUsersData"
+    require_auth: true
+    rate_limit_enabled: true
+  
+  # Post Service Routes
+  - path: "/api/v1/posts"
+    method: "POST"
+    service: "post_service"
+    grpc_service: "PostSerive"
+    grpc_method: "CreatePost"
+    require_auth: true
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/posts/{postId}"
+    method: "GET"
+    service: "post_service"
+    grpc_service: "PostSerive"
+    grpc_method: "GetPosts"
+    require_auth: true
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/posts/{postId}"
+    method: "DELETE"
+    service: "post_service"
+    grpc_service: "PostSerive"
+    grpc_method: "DeletePost"
+    require_auth: true
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/comments"
+    method: "POST"
+    service: "post_service"
+    grpc_service: "PostSerive"
+    grpc_method: "CreateComment"
+    require_auth: true
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/comments/{commentId}"
+    method: "DELETE"
+    service: "post_service"
+    grpc_service: "PostSerive"
+    grpc_method: "DeleteComment"
+    require_auth: true
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/likes"
+    method: "POST"
+    service: "post_service"
+    grpc_service: "PostSerive"
+    grpc_method: "CreateLike"
+    require_auth: true
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/likes/{likeId}"
+    method: "DELETE"
+    service: "post_service"
+    grpc_service: "PostSerive"
+    grpc_method: "DeleteLike"
+    require_auth: true
+    rate_limit_enabled: true
+  
+  # Follow Service Routes
+  - path: "/api/v1/followers/{userId}"
+    method: "GET"
+    service: "follow_service"
+    grpc_service: "FollowService"
+    grpc_method: "GetFollowers"
+    require_auth: true
+    rate_limit_enabled: true
+    
+  - path: "/api/v1/following/{userId}"
+    method: "GET"
+    service: "follow_service"
+    grpc_service: "FollowService"
+    grpc_method: "GetCeleb"
+    require_auth: true
+    rate_limit_enabled: true
+    
+  # Feed Service Routes
+  - path: "/api/v1/feed"
+    method: "GET"
+    service: "feed_service"
+    grpc_service: "FeedService"
+    grpc_method: "GetFeed"
+    require_auth: true
+    rate_limit_enabled: true

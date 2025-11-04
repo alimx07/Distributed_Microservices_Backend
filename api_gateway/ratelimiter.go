@@ -9,10 +9,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
+
 	"github.com/redis/go-redis/v9"
 )
 
-// 1 - laod rules``
+// 1 - laod rules
 // 2 - start get requests
 // 3 - apply rules
 // 4 - return nil or error
@@ -20,6 +22,7 @@ import (
 type redisPool struct {
 	pool chan *redis.Client
 }
+
 type RateLimiter struct {
 	ctx    context.Context
 	rules  []Rule
@@ -35,8 +38,8 @@ type Rule struct {
 	RefillRate int    `json:"refillRate"` // requests/s
 }
 
-func NewRateLimiter(ctx context.Context, config Config) (*RateLimiter, error) {
-	p, err := newRedisPool(config.RedisAddr, config.PoolSize)
+func NewRateLimiter(ctx context.Context, config models.RateLimitingConfig) (*RateLimiter, error) {
+	p, err := newRedisPool(config.Addr, config.PoolSize)
 	if err != nil {
 		return nil, err
 	}

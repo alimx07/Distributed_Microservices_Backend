@@ -1,39 +1,94 @@
 package main
 
 import (
-	"encoding/base64"
 	"errors"
 	"log"
+	"net/http"
 	"os"
+
+	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
+	"gopkg.in/yaml.v3"
 )
 
-func LoadConfig() (Config, error) {
+func LoadConfig() (models.ServerConfig, error) {
 	if err := godotenv.Load(".env"); err != nil {
-		return Config{}, err
+		log.Println("Warning: .env file not found, using environment variables")
 	}
-	config := Config{
-		ServerPort: os.Getenv("SERVER_PORT"),
-		ServerHost: os.Getenv("SERVER_HOST"),
+	config := models.ServerConfig{
+		Host:          os.Getenv("SERVER_PORT"),
+		Port:          os.Getenv("SERVER_HOST"),
+		PublickeyAddr: os.Getenv("Public_Key_Addr"),
 	}
-	pubB64 := os.Getenv("JWT_PUBLIC_KEY")
-	pubBytes, err := base64.StdEncoding.DecodeString(pubB64)
-	if err != nil {
-		return Config{}, errors.New("failed intialization of config")
-	}
-	config.JWTSecret = pubBytes
 	return config, nil
 }
 
 func InitLogger() {
-	f, _ := os.OpenFile("api_gateway.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	log.SetOutput(f)
+
+	log.SetOutput(os.Stdout)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
-func ValidateToken(token string, config Config) (string, error) {
+func GetPublicKey(addr string) ([]byte, error) {
+
+	var n int
+	var err error
+
+	resp, err := http.Get(addr)
+	if err != nil {
+		return nil, err
+	}
+	body := make([]byte, 4096)
+
+	for {
+		n, err = resp.Body.Read(body)
+		if n == len(body) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return body[:n], nil
+}
+
+func LoadAppConfig(filename string) (*models.AppConfig, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	var config models.AppConfig
+	err = yaml.Unmarshal(data, &config)
+	if err != nil {
+		return nil, err
+	}
+
+	// Override with env vars
+	if serverHost := os.Getenv("SERVER_HOST"); serverHost != "" {
+		config.Server.Host = serverHost
+	}
+	if serverPort := os.Getenv("SERVER_PORT"); serverPort != "" {
+		config.Server.Port = serverPort
+	}
+	if publicKeyAddr := os.Getenv("PUBLIC_KEY_ADDR"); publicKeyAddr != "" {
+		config.Server.PublickeyAddr = publicKeyAddr
+	}
+	if redisAddr := os.Getenv("REDIS_ADDR"); redisAddr != "" {
+		config.RateLimiting.Addr = redisAddr
+	}
+
+	return &config, nil
+}
+
+func ValidateToken(token string, pubKey []byte) (string, error) {
+	if len(pubKey) == 0 {
+		log.Println("Empty public key")
+		return "", errors.New("empty PubKey")
+	}
 
 	parser := jwt.NewParser(
 		jwt.WithValidMethods([]string{jwt.SigningMethodEdDSA.Alg()}),
@@ -42,7 +97,7 @@ func ValidateToken(token string, config Config) (string, error) {
 	)
 	claims := jwt.RegisteredClaims{}
 	parse, err := parser.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
-		return config.JWTSecret, nil
+		return pubKey, nil
 	})
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
@@ -51,10 +106,10 @@ func ValidateToken(token string, config Config) (string, error) {
 		return "", err
 	}
 	if !parse.Valid {
-		return "", errors.New("token is not valid")
+		return "", errors.New("invalid")
 	}
 	if claims.Subject == "" {
-		return "", errors.New("token is not valid")
+		return "", errors.New("invalid")
 	}
 	return claims.Subject, nil
 }
