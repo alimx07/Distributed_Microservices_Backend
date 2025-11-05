@@ -53,6 +53,19 @@ func NewHandler(config *models.AppConfig, loadBalancers map[string]*RoundRobin, 
 func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("%s is requested\n", r.URL.Path)
+
+	// CORS
+	w.Header().Set("Access-Control-Allow-Origin", "localhost") // mock url for now
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	// preflight
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	// Find matching route
 	route := h.findRoute(r.Method, r.URL.Path)
 	if route == nil {
@@ -123,6 +136,35 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("gRPC invocation error: %v", err)
 		http.Error(w, fmt.Sprintf("Service error: %v", err), http.StatusInternalServerError)
 		return
+	}
+
+	// register , login and refresh
+	if !route.RequireAuth {
+		var token models.Tokens
+
+		if err := json.Unmarshal(requestData, &token); err != nil {
+			log.Println("tokens unmarshal failed")
+			http.Error(w, fmt.Sprintf("Decoding Error , %v", err), http.StatusInternalServerError)
+		}
+		access_token := &http.Cookie{
+			Name:     "access_token",
+			Value:    token.Access,
+			Path:     "/",
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+			//  Secure:   true,  required in production for https
+		}
+
+		refresh_token := &http.Cookie{
+			Name:     "refresh_token",
+			Value:    token.Refresh,
+			Path:     "/api/v1/refresh", // send only on refresh request
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+			//  Secure:   true,  required in production for https
+		}
+		http.SetCookie(w, access_token)
+		http.SetCookie(w, refresh_token)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

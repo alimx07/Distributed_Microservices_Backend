@@ -115,7 +115,7 @@ func (g *GRPCInvoker) Invoke(ctx context.Context, conn *grpc.ClientConn, service
 
 	sd, exists := g.serviceDescriptors[serviceName]
 	if !exists {
-		return nil, fmt.Errorf("service %s not found (did you load the protoset?)", serviceName)
+		return nil, fmt.Errorf("service %s not found", serviceName)
 	}
 
 	md, exists := sd.methods[methodName]
