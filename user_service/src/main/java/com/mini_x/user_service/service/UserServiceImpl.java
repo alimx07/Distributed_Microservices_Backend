@@ -1,5 +1,8 @@
 package com.mini_x.user_service.service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -11,7 +14,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,10 +31,6 @@ import com.mini_x.user_service.repo.Write.WriteRepo;
 
 import io.jsonwebtoken.Jwts;
 
-/** 
- * Architecture Flow:
- * gRPC Service → User Service → Repository → Database
-*/
 @Service
 public class UserServiceImpl implements UserService {
     
@@ -40,17 +38,18 @@ public class UserServiceImpl implements UserService {
     private final ReadRepo readRepo;
     private final UserCache userCache;
     private final TokenCacheService tokenCacheService;
-    private final BCryptPasswordEncoder passwordEncoder;
     private final PrivateKey jwtPrivateKey;
     private final SecureRandom secureRandom;
 
-    @Value("${jwt.expiration:300}") // Default 5 minutes
+    @Value("${jwt.expiration:300}")
     private long jwtExpiration;
     
-    @Value("${jwt.refresh.expiration:604800}") // Default 7 days
+    @Value("${jwt.refresh.expiration:604800}")
     private long refreshTokenExpiration;
+    
+    private static final int HASH_ROUNDS = 12;
+    private static final String HASH_ALGORITHM = "SHA-256";
 
-    // Components will be injected by spring boot
     public UserServiceImpl(
             WriteRepo writeRepo, 
             ReadRepo readRepo, 
@@ -61,7 +60,6 @@ public class UserServiceImpl implements UserService {
         this.readRepo = readRepo;
         this.userCache = userCache;
         this.tokenCacheService = tokenCacheService;
-        this.passwordEncoder = new BCryptPasswordEncoder();
         this.jwtPrivateKey = jwtPrivateKey;
         this.secureRandom = new SecureRandom();
     }
@@ -69,7 +67,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional("primaryTransactionManager")
     public TokenPair register(String username, String email, String password) {
-        // Validate input
         if (username == null || username.trim().isEmpty()) {
             throw new InvalidInputException("Username cannot be empty");
         }
@@ -80,18 +77,15 @@ public class UserServiceImpl implements UserService {
             throw new InvalidInputException("Password cannot be empty");
         }
         
-        
         Optional<User> existingUser = readRepo.findByEmail(email);
         if (existingUser.isPresent()) {
             throw new UserAlreadyExistsException(email);
         }
         
-        
-        String hashedPassword = passwordEncoder.encode(password);
+        String hashedPassword = hashPassword(password);
         User user = new User(username, email, hashedPassword);
         User savedUser = writeRepo.save(user);
         
-        // Cache the newly registered user
         if (savedUser.getUserid() != null) {
             CachedUserData cacheData = new CachedUserData(savedUser.getUserid(), savedUser.getUsername());
             userCache.set(savedUser.getUserid(), cacheData);
@@ -103,14 +97,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(value = "secondaryTransactionManager", readOnly = true)
     public TokenPair login(String email, String password) {
-        
         if (email == null || email.trim().isEmpty()) {
             throw new InvalidInputException("Email cannot be empty");
         }
         if (password == null || password.trim().isEmpty()) {
             throw new InvalidInputException("Password cannot be empty");
         }
-        
         
         Optional<User> userOpt = readRepo.findByEmail(email);
         if (userOpt.isEmpty()) {
@@ -119,8 +111,7 @@ public class UserServiceImpl implements UserService {
         
         User user = userOpt.get();
         
-        
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (!verifyPassword(password, user.getPassword())) {
             throw new InvalidCredentialsException();
         }
         
@@ -133,16 +124,13 @@ public class UserServiceImpl implements UserService {
             throw new InvalidInputException("Refresh token cannot be empty");
         }
         
-        // Retrieve user ID from Redis using refresh token
         String userId = tokenCacheService.getUserIdByRefreshToken(refreshToken);
         
         if (userId == null) {
             throw new InvalidCredentialsException();
         }
         
-        // Check remaining TTL of refresh token
         Long remainingTTL = tokenCacheService.getRefreshTokenTTL(refreshToken);
-        
         
         String accessToken = Jwts.builder()
             .subject(userId)
@@ -153,12 +141,9 @@ public class UserServiceImpl implements UserService {
             .signWith(jwtPrivateKey)
             .compact();
         
-        // Keep the same refresh token if it is not expired
-        // Otherwise, rotate it with a new one
         String newRefreshToken = refreshToken;
         
         if (remainingTTL == null || remainingTTL > 0) {
-            // Delete old refresh token and generate new one
             tokenCacheService.deleteRefreshToken(refreshToken);
             newRefreshToken = generateRefreshToken();
             tokenCacheService.storeRefreshToken(userId, newRefreshToken, refreshTokenExpiration);
@@ -173,8 +158,6 @@ public class UserServiceImpl implements UserService {
             throw new InvalidInputException("Refresh token cannot be empty");
         }
         
-        // Delete refresh token from cache
-        // Revoke
         boolean deleted = tokenCacheService.deleteRefreshToken(refreshToken);
         
         if (!deleted) {
@@ -195,7 +178,6 @@ public class UserServiceImpl implements UserService {
         List<String> foundUserIds = new ArrayList<>();
         List<String> uncachedUserIds = new ArrayList<>();
         
-        // Check cache first
         for (String userId : userIds) {
             Object cachedData = userCache.get(userId);
             if (cachedData != null && cachedData instanceof CachedUserData) {
@@ -207,7 +189,6 @@ public class UserServiceImpl implements UserService {
             }
         }
         
-        // Fetch uncached users from database
         if (!uncachedUserIds.isEmpty()) {
             List<User> users = readRepo.findUsersByIds(uncachedUserIds);
             
@@ -215,7 +196,6 @@ public class UserServiceImpl implements UserService {
                 usernames.add(user.getUsername());
                 foundUserIds.add(user.getUserid());
                 
-                // Store in cache for next time
                 CachedUserData cacheData = new CachedUserData(user.getUserid(), user.getUsername());
                 userCache.set(user.getUserid(), cacheData);
             }
@@ -234,32 +214,78 @@ public class UserServiceImpl implements UserService {
         response.put("userIds", new ArrayList<>());
         return response;
     }
-    
-
     private TokenPair generateTokenPair(String userId) {
-        // Generate access token (JWT) with RS256
         String accessToken = Jwts.builder()
             .subject(userId)
             .issuer("users_service")
             .audience().add("api_gateway").and()
             .issuedAt(new Date())
             .expiration(new Date(System.currentTimeMillis() + jwtExpiration * 1000))
-            .signWith(jwtPrivateKey)  // RS256 is automatically selected for RSA private keys
+            .signWith(jwtPrivateKey)
             .compact();
         
-        // Refresh Token : Opaque String
         String refreshToken = generateRefreshToken();
-        
         
         tokenCacheService.storeRefreshToken(userId, refreshToken, refreshTokenExpiration);
         
         return new TokenPair(accessToken, refreshToken);
     }
     
-
     private String generateRefreshToken() {
         byte[] randomBytes = new byte[32];
         secureRandom.nextBytes(randomBytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+    }
+    
+    private String hashPassword(String password) {
+        try {
+            byte[] salt = new byte[16];
+            secureRandom.nextBytes(salt);
+            
+            MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
+            md.update(salt);
+            
+            byte[] hashedPassword = password.getBytes(StandardCharsets.UTF_8);
+            for (int i = 0; i < HASH_ROUNDS; i++) {
+                md.update(hashedPassword);
+                hashedPassword = md.digest();
+                md.reset();
+            }
+            
+            String saltBase64 = Base64.getEncoder().encodeToString(salt);
+            String hashBase64 = Base64.getEncoder().encodeToString(hashedPassword);
+            
+            return String.format("%s$%d$%s$%s", HASH_ALGORITHM, HASH_ROUNDS, saltBase64, hashBase64);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error hashing password", e);
+        }
+    }
+    
+    private boolean verifyPassword(String password, String storedHash) {
+        try {
+            String[] parts = storedHash.split("\\$");
+            if (parts.length != 4) {
+                return false;
+            }
+            
+            String algorithm = parts[0];
+            int iterations = Integer.parseInt(parts[1]);
+            byte[] salt = Base64.getDecoder().decode(parts[2]);
+            byte[] expectedHash = Base64.getDecoder().decode(parts[3]);
+            
+            MessageDigest md = MessageDigest.getInstance(algorithm);
+            md.update(salt);
+            
+            byte[] hashedPassword = password.getBytes(StandardCharsets.UTF_8);
+            for (int i = 0; i < iterations; i++) {
+                md.update(hashedPassword);
+                hashedPassword = md.digest();
+                md.reset();
+            }
+            
+            return MessageDigest.isEqual(hashedPassword, expectedHash);
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

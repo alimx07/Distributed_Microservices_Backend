@@ -3,7 +3,6 @@ package com.mini_x.user_service.grpc;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.grpc.server.service.GrpcService;
 import org.springframework.stereotype.Component;
 
 import com.mini_x.user_service.dto.TokenPair;
@@ -12,7 +11,7 @@ import com.mini_x.user_service.exception.InvalidInputException;
 import com.mini_x.user_service.exception.UserAlreadyExistsException;
 import com.mini_x.user_service.exception.UserNotFoundException;
 import com.mini_x.user_service.service.UserService;
-
+import net.devh.boot.grpc.server.service.GrpcService;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 

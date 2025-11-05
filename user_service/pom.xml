@@ -28,9 +28,8 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<grpc.version>1.74.0</grpc.version>
-		<protobuf-java.version>4.31.1</protobuf-java.version>
-		<spring-grpc.version>0.11.0</spring-grpc.version>
+		<grpc.version>1.63.0</grpc.version>
+		<protobuf-java.version>3.25.1</protobuf-java.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -42,21 +41,24 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>io.grpc</groupId>
-			<artifactId>grpc-services</artifactId>
+			<groupId>net.devh</groupId>
+			<artifactId>grpc-server-spring-boot-starter</artifactId>
+			<version>3.1.0.RELEASE</version>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.grpc</groupId>
-			<artifactId>spring-grpc-server-web-spring-boot-starter</artifactId>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>${protobuf-java.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>javax.annotation-api</artifactId>
+			<version>1.3.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -93,22 +95,9 @@
         	<artifactId>ulid-creator</artifactId>
        		<version>5.2.3</version>
    	    </dependency>
-		<dependency>
-			<groupId>org.springframework.grpc</groupId>
-			<artifactId>spring-grpc-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>org.springframework.grpc</groupId>
-				<artifactId>spring-grpc-dependencies</artifactId>
-				<version>${spring-grpc.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
+		<!-- Removed spring-grpc-dependencies to avoid conflicts with net.devh -->
 	</dependencyManagement>
 
 	<build>

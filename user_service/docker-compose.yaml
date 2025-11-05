@@ -7,37 +7,48 @@ networks:
     driver: bridge
   redis_cluster_net: 
     driver: bridge
+  common_net:
+    external: true
+    name: common_network
 
 services:
-  user_service:
+  user-service1:
     build:
       context: .
       dockerfile: Dockerfile
-    image: user_service:1.0.0
+    image: user_service1:1.0.0
+    container_name: user-service1
     environment:
       - SERVER_PORT=8080
       - GRPC_PORT=50051
-      - PRIMARY_DB_URL=jdbc:postgresql://postgres-primary:5432/user_db
+      # Primary Database (Write)
+      - PRIMARY_DB_URL=jdbc:postgresql://postgres_primary:5432/userdb
       - PRIMARY_DB_USERNAME=postgres
       - PRIMARY_DB_PASSWORD=mypassword
-      - SECONDARY_DB_URL=jdbc:postgresql://postgres-replica:5432/user_db
+      # Secondary Database (Read)
+      - SECONDARY_DB_URL=jdbc:postgresql://postgres_secondary:5432/userdb
       - SECONDARY_DB_USERNAME=postgres
       - SECONDARY_DB_PASSWORD=mypassword
+      # Redis User Cache
       - REDIS_HOST=redis-standalone
       - REDIS_PORT=6379
       - REDIS_PASSWORD=
       - REDIS_DATABASE=0
       - REDIS_TIMEOUT=60000
+      # Redis Token Cluster
       - REDIS_CLUSTER_NODES=redis-node-1:6379,redis-node-2:6379,redis-node-3:6379,redis-node-4:6379,redis-node-5:6379,redis-node-6:6379
+      # JWT Keys
       - JWT_PRIVATE_KEY_PATH=classpath:keys/private.pem
       - JWT_PUBLIC_KEY_PATH=classpath:keys/public.pem
+
     ports:
-      - 8080:8080
+      - 9090:8080
       - 50051:50051
     networks:
       - app_net
       - postgres_net
       - redis_cluster_net
+      - common_net
     depends_on:
       - postgres_primary
       - postgres_secondary

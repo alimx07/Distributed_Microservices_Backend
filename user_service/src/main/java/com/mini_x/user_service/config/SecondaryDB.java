@@ -3,8 +3,7 @@ package com.mini_x.user_service.config;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,10 +24,26 @@ import com.zaxxer.hikari.HikariDataSource;
 )
 public class SecondaryDB {
 
+    @Value("${spring.datasource.secondary.url}")
+    private String url;
+
+    @Value("${spring.datasource.secondary.username}")
+    private String username;
+
+    @Value("${spring.datasource.secondary.password}")
+    private String password;
+
+    @Value("${spring.datasource.secondary.driver-class-name}")
+    private String driverClassName;
+
     @Bean(name = "secondaryDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.secondary")
     public DataSource secondaryDataSource() {
-        return DataSourceBuilder.create().type(HikariDataSource.class).build();
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setJdbcUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        dataSource.setDriverClassName(driverClassName);
+        return dataSource;
     }
 
     @Bean(name = "secondaryEntityManagerFactory")
