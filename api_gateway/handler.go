@@ -29,6 +29,8 @@ func NewHandler(config *models.AppConfig, loadBalancers map[string]*RoundRobin, 
 		routeMap:      make(map[string]map[string]*models.RouteConfig),
 	}
 	var err error
+
+	log.Println(config.Server.PublickeyAddr)
 	config.PublicKey, err = GetPublicKey(config.Server.PublickeyAddr)
 
 	if err != nil {
@@ -49,6 +51,8 @@ func NewHandler(config *models.AppConfig, loadBalancers map[string]*RoundRobin, 
 
 // GenericHandler handles all HTTP requests and routes them to the required gRPC services
 func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
+
+	log.Printf("%s is requested\n", r.URL.Path)
 	// Find matching route
 	route := h.findRoute(r.Method, r.URL.Path)
 	if route == nil {

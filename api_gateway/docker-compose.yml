@@ -5,6 +5,9 @@ networks:
     driver: bridge
   redis_net:
     driver: bridge
+  common_net:
+    external: true
+    name: common_network
 
 services:
   api_gateway:
@@ -17,7 +20,7 @@ services:
       # Server Configuration
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8080
-      - PUBLIC_KEY_ADDR=user_service:9090
+      - PUBLIC_KEY_ADDR=http://user-service1:8080/public-key
       
       # Redis Configuration (for rate limiting)
       - REDIS_ADDR=redis:6379
@@ -29,6 +32,7 @@ services:
     networks:
       - gateway_net
       - redis_net
+      - common_net
     restart: on-failure
     
 

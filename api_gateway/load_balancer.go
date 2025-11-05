@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -57,14 +59,13 @@ func NewRoundRobin(ctx context.Context, serviceURLs []string, pingInterval time.
 			log.Printf("error connecting to url: %s, err: %v", url, err)
 			continue
 		}
-
+		// conn.Connect()
 		srv := &Service{
 			conn: conn,
 			URL:  url,
 		}
-
 		r.conns = append(r.conns, srv)
-		log.Printf("Connected to service instance: %s", url)
+		// log.Printf("Connected to service instance: %s", url)
 	}
 
 	if len(r.conns) == 0 {
@@ -110,16 +111,18 @@ func (r *RoundRobin) ping(pingInterval time.Duration) {
 
 func (r *RoundRobin) healthCheck() {
 	for _, srv := range r.conns {
-		resp, err := http.Get(srv.URL + "/health")
+		resp, err := http.Get(healthEnd(srv.URL))
 		if err == nil && resp.StatusCode == http.StatusOK {
 			if !srv.healthy.Load() {
 				log.Printf("Service %s is now healthy", srv.URL)
 			}
+			// log.Printf("Service %s is healthy", srv.URL)
 			srv.healthy.Store(true)
 		} else {
 			if srv.healthy.Load() {
 				log.Printf("Service %s is now unhealthy: %v", srv.URL, err)
 			}
+			// log.Printf("Service %s is  unhealthy", srv.URL)
 			srv.healthy.Store(false)
 		}
 	}
@@ -131,4 +134,16 @@ func (r *RoundRobin) Close() {
 			srv.conn.Close()
 		}
 	}
+}
+
+func healthEnd(addr string) string {
+	parts := strings.Split(addr, ":")
+	if len(parts) != 2 {
+		return ""
+	}
+
+	hostname := parts[0]
+	healthURL := fmt.Sprintf("http://%s:8080/health", hostname)
+
+	return healthURL
 }

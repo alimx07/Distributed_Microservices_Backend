@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -31,28 +32,35 @@ func InitLogger() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
+type PublicKeyResponse struct {
+	PublicKey string `json:"publicKey"`
+}
+
 func GetPublicKey(addr string) ([]byte, error) {
 
-	var n int
 	var err error
 
 	resp, err := http.Get(addr)
 	if err != nil {
+		log.Println(err.Error())
 		return nil, err
 	}
-	body := make([]byte, 4096)
+	defer resp.Body.Close()
 
-	for {
-		n, err = resp.Body.Read(body)
-		if n == len(body) {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
+	if resp.StatusCode != http.StatusOK {
+		log.Println(resp.Status)
+		log.Println(resp.StatusCode)
+		return nil, err
 	}
 
-	return body[:n], nil
+	log.Println(resp.StatusCode)
+	var data PublicKeyResponse
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		log.Println(err.Error())
+		return nil, err
+	}
+	log.Println(data.PublicKey)
+	return []byte(data.PublicKey), nil
 }
 
 func LoadAppConfig(filename string) (*models.AppConfig, error) {

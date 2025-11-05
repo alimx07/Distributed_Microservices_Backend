@@ -15,5 +15,7 @@ COPY config.yaml .
 COPY rate_rules.json .
 COPY redis_script.lua .
 
+COPY _proto/ ./_proto/
+
 EXPOSE 8080
 CMD ["./app"]

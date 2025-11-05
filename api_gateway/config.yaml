@@ -14,29 +14,29 @@ rate_limiting:
 services:
   user_service:
     instances:
-      - "localhost:50051"
-      - "localhost:50052"
-      - "localhost:50053"
+      - "user-service1:50051"
+      - "user-service2:50051"
+      - "user-service3:50051"
     health_check_interval: 5s
     protoset_path: "_proto/user.protoset"
   
   post_service:
     instances:
-      - "localhost:50061"
-      - "localhost:50062"
+      - "post_service:50061"
+      - "post_service:50062"
     health_check_interval: 5s
     protoset_path: "_proto/post.protoset"
   
   follow_service:
     instances:
-      - "localhost:50071"
-      - "localhost:50072"
+      - "follow_service:50071"
+      - "follow_service:50072"
     health_check_interval: 5s
     protoset_path: "_proto/follow.protoset"
   
   feed_service:
     instances:
-      - "localhost:50081"
+      - "feed_service:50081"
     health_check_interval: 5s
     protoset_path: "_proto/feed.protoset"
 
