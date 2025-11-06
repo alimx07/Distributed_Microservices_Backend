@@ -40,14 +40,12 @@ func (s *Server) start() error {
 func (s *Server) addRoutes() {
 	// Register all routes from config
 	for _, route := range s.config.Routes {
-
 		pattern := route.Method + " " + route.Path
 		s.router.HandleFunc(pattern, s.handler.GenericHandler)
 
 		log.Printf("Registered route: %s %s -> %s.%s",
 			route.Method, route.Path, route.GRPCService, route.GRPCMethod)
 	}
-
 	// Health check endpoint
 	s.router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

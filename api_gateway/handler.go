@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
 )
@@ -141,14 +142,16 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// register , login and refresh
-	if !route.RequireAuth {
+	// TODO:
+	// Try to refactor and find more modular way to do that
+	if strings.HasSuffix(route.Path, "login") || strings.HasSuffix(route.Path, "refresh") {
 		var token models.Tokens
 
-		if err := json.Unmarshal(requestData, &token); err != nil {
+		if err := json.Unmarshal(responseJSON, &token); err != nil {
 			log.Println("tokens unmarshal failed")
 			http.Error(w, fmt.Sprintf("Decoding Error , %v", err), http.StatusInternalServerError)
 		}
+
 		access_token := &http.Cookie{
 			Name:     "access_token",
 			Value:    token.Access,
@@ -159,15 +162,31 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		refresh_token := &http.Cookie{
-			Name:     "refresh_token",
-			Value:    token.Refresh,
-			Path:     "/api/v1/refresh", // send only on refresh request
+			Name:  "refresh_token",
+			Value: token.Refresh,
+			// TODO:
+			// I can send this token only into some path like api/v1/refresh
+			// Is there a way to send to only two paths instead of duplicate the token or not ?
+			Path:     "/",
 			HttpOnly: true,
 			SameSite: http.SameSiteNoneMode,
 			//  Secure:   true,  required in production for https
 		}
 		http.SetCookie(w, access_token)
 		http.SetCookie(w, refresh_token)
+	}
+
+	if strings.HasSuffix(route.Path, "logout") {
+		var token models.Tokens
+
+		if err := json.Unmarshal(requestData, &token); err != nil {
+			log.Println("tokens unmarshal failed")
+			http.Error(w, fmt.Sprintf("Decoding Error , %v", err), http.StatusInternalServerError)
+		}
+		rc := h.redis.Get()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		rc.Eval(ctx, h.config.Redis.AddScript, []string{token.Access}, []interface{}{5 * time.Minute})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -236,7 +255,12 @@ func (h *Handler) buildRequestData(r *http.Request, route *models.RouteConfig, b
 	} else {
 		data = make(map[string]interface{})
 	}
+	// extract header/Tokens
+	tokenParams := h.extractTokens(r)
 
+	for key, value := range tokenParams {
+		data[key] = value
+	}
 	// For patterns like /api/v1/posts/{postId}, this extracts "postId"
 	pathParams := h.extractPathParams(route.Path, r)
 	for key, value := range pathParams {
@@ -251,6 +275,16 @@ func (h *Handler) buildRequestData(r *http.Request, route *models.RouteConfig, b
 	}
 
 	return json.Marshal(data)
+}
+
+func (h *Handler) extractTokens(r *http.Request) map[string]interface{} {
+	tokens := make(map[string]interface{})
+	token := r.Header.Get("refresh_token")
+	if token == "" {
+		return tokens
+	}
+	tokens["refresh_token"] = token
+	return tokens
 }
 
 func (h *Handler) extractPathParams(pattern string, r *http.Request) map[string]interface{} {
@@ -284,7 +318,7 @@ func (h *Handler) checkAuth(w http.ResponseWriter, r *http.Request) (string, boo
 		return "", false
 	}
 
-	userID, err := ValidateToken(token, h.config.PublicKey, h.redis.Get(), h.config.Redis.Script)
+	userID, err := ValidateToken(token, h.config.PublicKey, h.redis.Get(), h.config.Redis.CheckScript)
 	if err != nil {
 		if err.Error() == "invalid" {
 			http.Error(w, "Invalid or expired token", http.StatusUnauthorized)

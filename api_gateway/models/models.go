@@ -31,9 +31,10 @@ type ServiceConfig struct {
 }
 
 type RedisConfig struct {
-	RedisAddr string `yaml:"redis_pool_size"`
-	Script    string `yaml: "redis_script_path"`
-	PoolSize  int    `yaml:"redis_addr"`
+	RedisAddr   string `yaml:"redis_pool_size"`
+	AddScript   string `yaml:"redis_add_script"`
+	CheckScript string `yaml:"redis_check_script"`
+	PoolSize    int    `yaml:"redis_addr"`
 }
 
 type RouteConfig struct {
