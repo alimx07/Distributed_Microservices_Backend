@@ -1,16 +1,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 	"gopkg.in/yaml.v3"
 )
 
@@ -25,7 +28,6 @@ func LoadConfig() (models.ServerConfig, error) {
 	}
 	return config, nil
 }
-
 func InitLogger() {
 
 	log.SetOutput(os.Stdout)
@@ -85,19 +87,35 @@ func LoadAppConfig(filename string) (*models.AppConfig, error) {
 	if publicKeyAddr := os.Getenv("PUBLIC_KEY_ADDR"); publicKeyAddr != "" {
 		config.Server.PublickeyAddr = publicKeyAddr
 	}
+	if clusterAddr := os.Getenv("CLUSTER_ADDR"); clusterAddr != "" {
+		config.RateLimiting.Addr = clusterAddr
+	}
+
 	if redisAddr := os.Getenv("REDIS_ADDR"); redisAddr != "" {
-		config.RateLimiting.Addr = redisAddr
+		config.Redis.RedisAddr = redisAddr
 	}
 
 	return &config, nil
 }
 
-func ValidateToken(token string, pubKey []byte) (string, error) {
+// This func will validate token & make sure that it is not revoked
+// by check redis instance
+func ValidateToken(token string, pubKey []byte, r *redis.Client, luaScript string) (string, error) {
 	if len(pubKey) == 0 {
 		log.Println("Empty public key")
 		return "", errors.New("empty PubKey")
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
+	tokenKey := "revoked:token:" + token
+	result, err := r.Eval(ctx, luaScript, []string{tokenKey}).Result()
+	if err != nil {
+		log.Printf("Error checking token denylist: %v", err)
+		// Fail-open again
+	} else if res, ok := result.(int64); ok && res == 1 {
+		return "", errors.New("token revoked")
+	}
 	parser := jwt.NewParser(
 		jwt.WithValidMethods([]string{jwt.SigningMethodEdDSA.Alg()}),
 		jwt.WithAudience("api_gateway"),
@@ -120,4 +138,41 @@ func ValidateToken(token string, pubKey []byte) (string, error) {
 		return "", errors.New("invalid")
 	}
 	return claims.Subject, nil
+}
+
+type RedisPool struct {
+	pool chan *redis.Client
+}
+
+// Create new Connection pool of size N
+func NewRedisPool(addr string, n int) (*RedisPool, error) {
+	var client *redis.Client
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	var numOfCon int
+	rsPool := &RedisPool{
+		pool: make(chan *redis.Client, n),
+	}
+	for range n {
+		client = redis.NewClient(&redis.Options{
+			Addr: addr,
+		})
+		if err := client.Ping(ctx).Err(); err != nil {
+			continue
+		}
+		numOfCon++
+		rsPool.pool <- client
+	}
+	if numOfCon == 0 {
+		return nil, errors.New("no Connections opened with redis")
+	}
+	return rsPool, nil
+}
+
+func (rp *RedisPool) Get() *redis.Client {
+	return <-rp.pool
+}
+
+func (rp *RedisPool) Put(r *redis.Client) {
+	rp.pool <- r
 }

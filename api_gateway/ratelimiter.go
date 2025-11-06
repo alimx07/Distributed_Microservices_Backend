@@ -3,15 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
-
-	"github.com/redis/go-redis/v9"
 )
 
 // 1 - laod rules
@@ -19,14 +16,10 @@ import (
 // 3 - apply rules
 // 4 - return nil or error
 
-type redisPool struct {
-	pool chan *redis.Client
-}
-
 type RateLimiter struct {
 	ctx    context.Context
 	rules  []Rule
-	redis  *redisPool
+	redis  *RedisPool
 	script string //lua script to run redis commands
 }
 
@@ -39,7 +32,7 @@ type Rule struct {
 }
 
 func NewRateLimiter(ctx context.Context, config models.RateLimitingConfig) (*RateLimiter, error) {
-	p, err := newRedisPool(config.Addr, config.PoolSize)
+	p, err := NewRedisPool(config.Addr, config.PoolSize)
 	if err != nil {
 		return nil, err
 	}
@@ -55,38 +48,6 @@ func NewRateLimiter(ctx context.Context, config models.RateLimitingConfig) (*Rat
 	return &RateLimiter{ctx: ctx, rules: rules, redis: p, script: string(data)}, nil
 }
 
-// Create new Connection pool of size N
-func newRedisPool(addr string, n int) (*redisPool, error) {
-	var client *redis.Client
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-	var numOfCon int
-	rsPool := &redisPool{
-		pool: make(chan *redis.Client, n),
-	}
-	for range n {
-		client = redis.NewClient(&redis.Options{
-			Addr: addr,
-		})
-		if err := client.Ping(ctx).Err(); err != nil {
-			continue
-		}
-		numOfCon++
-		rsPool.pool <- client
-	}
-	if numOfCon == 0 {
-		return nil, errors.New("no Connections opened with redis")
-	}
-	return rsPool, nil
-}
-
-func (rp *redisPool) Get() *redis.Client {
-	return <-rp.pool
-}
-
-func (rp *redisPool) Put(r *redis.Client) {
-	rp.pool <- r
-}
 func (rl *RateLimiter) Allow(r *http.Request) (bool, error) {
 	var ok bool
 	var err error

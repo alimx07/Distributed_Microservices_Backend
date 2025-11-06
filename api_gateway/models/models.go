@@ -5,6 +5,7 @@ import "time"
 type AppConfig struct {
 	Server       ServerConfig             `yaml:"server"`
 	RateLimiting RateLimitingConfig       `yaml:"rate_limiting"`
+	Redis        RedisConfig              `yaml:"redis_config"`
 	Services     map[string]ServiceConfig `yaml:"services"`
 	Routes       []RouteConfig            `yaml:"routes"`
 	PublicKey    []byte
@@ -27,6 +28,12 @@ type ServiceConfig struct {
 	Instances           []string      `yaml:"instances"`
 	HealthCheckInterval time.Duration `yaml:"health_check_interval"`
 	ProtosetPath        string        `yaml:"protoset_path"`
+}
+
+type RedisConfig struct {
+	RedisAddr string `yaml:"redis_pool_size"`
+	Script    string `yaml: "redis_script_path"`
+	PoolSize  int    `yaml:"redis_addr"`
 }
 
 type RouteConfig struct {

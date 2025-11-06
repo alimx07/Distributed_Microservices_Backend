@@ -37,6 +37,13 @@ func main() {
 	grpcInvoker := NewGRPCInvoker()
 	log.Println("gRPC invoker initialized")
 
+	redis, err := NewRedisPool(config.Redis.RedisAddr, config.Redis.PoolSize)
+
+	if err != nil {
+		// Do not kill the service. just log
+		log.Println("Warning: Redis Connection failed for DenyList instance")
+	}
+
 	for serviceName, serviceConfig := range config.Services {
 		if serviceConfig.ProtosetPath == "" {
 			log.Printf("Warning: No protoset path configured for service %s", serviceName)
@@ -51,7 +58,7 @@ func main() {
 		}
 	}
 
-	handler := NewHandler(config, loadBalancers, grpcInvoker, rateLimiter)
+	handler := NewHandler(config, loadBalancers, grpcInvoker, rateLimiter, redis)
 	log.Println("Handler initialized")
 
 	// Initialize and start server

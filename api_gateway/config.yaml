@@ -10,6 +10,11 @@ rate_limiting:
   addr: "localhost:6379"
   pool_size: 10
 
+redis:
+  redis_addr : "localhost:7000"
+  redis_pool_size : 5
+  redis_script_path : "check_token.lua"
+
 # Service instances for load balancing
 services:
   user_service:

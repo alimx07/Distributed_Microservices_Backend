@@ -17,15 +17,17 @@ type Handler struct {
 	loadBalancers map[string]*RoundRobin
 	grpcInvoker   *GRPCInvoker
 	rateLimiter   *RateLimiter
+	redis         *RedisPool
 	routeMap      map[string]map[string]*models.RouteConfig // method -> path -> config
 }
 
-func NewHandler(config *models.AppConfig, loadBalancers map[string]*RoundRobin, grpcInvoker *GRPCInvoker, rateLimiter *RateLimiter) *Handler {
+func NewHandler(config *models.AppConfig, loadBalancers map[string]*RoundRobin, grpcInvoker *GRPCInvoker, rateLimiter *RateLimiter, redis *RedisPool) *Handler {
 	h := &Handler{
 		config:        config,
 		loadBalancers: loadBalancers,
 		grpcInvoker:   grpcInvoker,
 		rateLimiter:   rateLimiter,
+		redis:         redis,
 		routeMap:      make(map[string]map[string]*models.RouteConfig),
 	}
 	var err error
@@ -73,15 +75,6 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check authentication if required
-	var userID string
-	if route.RequireAuth {
-		var ok bool
-		userID, ok = h.checkAuth(w, r)
-		if !ok {
-			return // Auth middleware already wrote error
-		}
-	}
 	// Apply rate limiting if enabled
 	if route.RateLimitEnabled {
 		allowed, err := h.rateLimiter.Allow(r)
@@ -91,6 +84,16 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		} else if !allowed {
 			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
 			return
+		}
+	}
+
+	// Check authentication if required
+	var userID string
+	if route.RequireAuth {
+		var ok bool
+		userID, ok = h.checkAuth(w, r)
+		if !ok {
+			return // Auth middleware already wrote error
 		}
 	}
 
@@ -281,7 +284,7 @@ func (h *Handler) checkAuth(w http.ResponseWriter, r *http.Request) (string, boo
 		return "", false
 	}
 
-	userID, err := ValidateToken(token, h.config.PublicKey)
+	userID, err := ValidateToken(token, h.config.PublicKey, h.redis.Get(), h.config.Redis.Script)
 	if err != nil {
 		if err.Error() == "invalid" {
 			http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
