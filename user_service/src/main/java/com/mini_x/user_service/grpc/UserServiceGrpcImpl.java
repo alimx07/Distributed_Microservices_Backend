@@ -11,9 +11,10 @@ import com.mini_x.user_service.exception.InvalidInputException;
 import com.mini_x.user_service.exception.UserAlreadyExistsException;
 import com.mini_x.user_service.exception.UserNotFoundException;
 import com.mini_x.user_service.service.UserService;
-import net.devh.boot.grpc.server.service.GrpcService;
+
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import net.devh.boot.grpc.server.service.GrpcService;
 
 @Component
 @GrpcService
@@ -26,19 +27,17 @@ public class UserServiceGrpcImpl extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void register(RegisterRequest request, StreamObserver<TokenResponse> responseObserver) {
+    public void register(RegisterRequest request, StreamObserver<RegisterResponse> responseObserver) {
         try {
-            TokenPair tokenPair = userService.register(
+            userService.register(
                 request.getUsername(),
                 request.getEmail(),
                 request.getPassword()
             );
 
-            TokenResponse response = TokenResponse.newBuilder()
-                .setAccessToken(tokenPair.getAccessToken())
-                .setRefreshToken(tokenPair.getRefreshToken())
+            RegisterResponse response = RegisterResponse.newBuilder()
+                .setMessage("User Registered Successfully")
                 .build();
-
             responseObserver.onNext(response);
             responseObserver.onCompleted();
 

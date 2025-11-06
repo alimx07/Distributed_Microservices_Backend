@@ -7,7 +7,7 @@ import com.mini_x.user_service.dto.TokenPair;
 
 public interface UserService {
 
-    TokenPair register(String username, String email, String password);
+    void register(String username, String email, String password);
 
     TokenPair login(String email, String password);
     

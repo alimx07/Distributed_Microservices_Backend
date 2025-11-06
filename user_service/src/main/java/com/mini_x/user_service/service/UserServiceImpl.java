@@ -66,7 +66,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional("primaryTransactionManager")
-    public TokenPair register(String username, String email, String password) {
+    public void register(String username, String email, String password) {
         if (username == null || username.trim().isEmpty()) {
             throw new InvalidInputException("Username cannot be empty");
         }
@@ -91,7 +91,7 @@ public class UserServiceImpl implements UserService {
             userCache.set(savedUser.getUserid(), cacheData);
         }
         
-        return generateTokenPair(savedUser.getUserid());
+        return;
     }
 
     @Override
