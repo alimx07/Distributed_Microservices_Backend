@@ -11,7 +11,7 @@ type CachedRepo interface {
 	CachePost(ctx context.Context, post models.CachedPost) error
 	DeletePost(ctx context.Context, id int64) error
 	GetPosts(ctx context.Context, ids []int64) ([]models.Post, error)
-	UpdateLikesCounter(ctx context.Context, id int64)
-	UpdateCommentsCounter(ctx context.Context, id int64)
+	UpdateLikesCounter(ctx context.Context, id int64, delta int64)
+	UpdateCommentsCounter(ctx context.Context, id int64, delta int64)
 	SyncCounters()
 }

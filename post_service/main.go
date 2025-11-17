@@ -23,5 +23,8 @@ func main() {
 	postRepo := postRepo.NewPostgresRepo(primaryDB, replicaDB)
 	cachedRepo := cachedRepo.NewRedisRepo(postRepo, config.CacheHost, config.CachePort, config.CachePassword)
 	postService := NewPostService(postRepo, cachedRepo, config)
+	go func() {
+		log.Println(postService.StartHealthServer())
+	}()
 	log.Fatal(postService.start())
 }

@@ -21,3 +21,7 @@ CREATE TABLE IF NOT EXISTS likes(
 	created_at TIMESTAMP DEFAULT NoW(),
 	PRIMARY KEY (post_id , user_id)
 );
+
+CREATE INDEX idx_user_posts ON posts(user_id , created_at);
+CREATE INDEX idx_post_commnets ON comments(post_id , created_at);
+CREATE INDEX idx_post_likes ON likes(post_id, created_at);

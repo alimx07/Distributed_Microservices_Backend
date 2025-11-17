@@ -39,21 +39,25 @@ func (rs *redisRepo) CachePost(ctx context.Context, post models.CachedPost) erro
 }
 
 func (rs *redisRepo) DeletePost(ctx context.Context, id int64) error {
-	// Remove from cache
-	err := rs.redisClient.Del(ctx, postKey(id)).Err()
+	// Remove from cache atomically
+	pipe := rs.redisClient.TxPipeline()
+	pipe.Del(ctx, postKey(id))
+	pipe.Del(ctx, counterKey(id))
+	pipe.SRem(ctx, "counters:set", counterKey(id))
+	_, err := pipe.Exec(ctx)
 	return err
 }
 
-func (rs *redisRepo) UpdateLikesCounter(ctx context.Context, id int64) {
+func (rs *redisRepo) UpdateLikesCounter(ctx context.Context, id int64, delta int64) {
 	pipe := rs.redisClient.Pipeline()
-	pipe.HIncrBy(ctx, counterKey(id), "likes", 1)
+	pipe.HIncrBy(ctx, counterKey(id), "likes", delta)
 	pipe.SAdd(ctx, "counters:set", counterKey(id))
 	pipe.Exec(ctx)
 }
 
-func (rs *redisRepo) UpdateCommentsCounter(ctx context.Context, id int64) {
+func (rs *redisRepo) UpdateCommentsCounter(ctx context.Context, id int64, delta int64) {
 	pipe := rs.redisClient.Pipeline()
-	pipe.HIncrBy(ctx, counterKey(id), "comments", 1)
+	pipe.HIncrBy(ctx, counterKey(id), "comments", delta)
 	pipe.SAdd(ctx, "counters:set", counterKey(id))
 	pipe.Exec(ctx)
 }
@@ -134,11 +138,11 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 			i := idx[cnt.Id]
 			posts[i].Likes_count = cnt.Likes
 			posts[i].Comments_count = cnt.Comments
-			pipe.HMSet(ctx, counterKey(cnt.Id), "likes", cnt.Likes, "comments", cnt.Comments)
 		}
 		_, err = pipe.Exec(ctx)
 		if err != nil {
 			log.Println("Error while putting data in counters cache: ", err.Error())
+
 		}
 	}
 	// From Database
@@ -155,7 +159,6 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 
 			// populate data back to caches
 			pipe.Set(ctx, fmt.Sprintf("post:%v", post.Id), data, 12*time.Hour)
-			pipe.HMSet(ctx, counterKey(post.Id), "likes", post.Likes_count, "comments", post.Comments_count)
 			posts = append(posts, post)
 		}
 		_, err = pipe.Exec(ctx)

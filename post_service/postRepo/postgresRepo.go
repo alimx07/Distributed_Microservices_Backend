@@ -37,28 +37,30 @@ func (ps *PostgresRepo) CreatePost(ctx context.Context, post models.Post) (int64
 	return id, nil
 }
 
-func (ps *PostgresRepo) CreateComment(ctx context.Context, comment models.Comment) error {
-	_, err := ps.primaryDB.ExecContext(ctx,
+func (ps *PostgresRepo) CreateComment(ctx context.Context, comment models.Comment) (int64, error) {
+	var id int64
+	err := ps.primaryDB.QueryRowContext(ctx,
 		`INSERT INTO comments (user_id, post_id ,content) 
         VALUES ($1, $2 , $3)`,
-		comment.User_id, comment.Post_id, comment.Content)
+		comment.User_id, comment.Post_id, comment.Content).Scan(&id)
 	if err != nil {
 		log.Println("Error creating Comment: ", err.Error())
-		return err
+		return 0, err
 	}
-	return nil
+	return id, nil
 }
 
-func (ps *PostgresRepo) CreateLike(ctx context.Context, like models.Like) error {
-	_, err := ps.primaryDB.ExecContext(ctx,
+func (ps *PostgresRepo) CreateLike(ctx context.Context, like models.Like) (int64, error) {
+	var id int64
+	err := ps.primaryDB.QueryRowContext(ctx,
 		`INSERT INTO likes (user_id, post_id) 
         VALUES ($1, $2)`,
-		like.User_id, like.Post_id)
+		like.User_id, like.Post_id).Scan(&id)
 	if err != nil {
 		log.Println("Error creating Like: ", err.Error())
-		return err
+		return 0, err
 	}
-	return nil
+	return id, nil
 }
 
 func (ps *PostgresRepo) DeletePost(ctx context.Context, id int64) error {

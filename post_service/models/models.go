@@ -17,11 +17,12 @@ type Config struct {
 	DBReplicaName     string
 	DBReplicaPassword string
 
-	CacheHost     string
-	CachePort     string
-	CachePassword string
-	ServerHost    string
-	ServerPort    string
+	CacheHost      string
+	CachePort      string
+	CachePassword  string
+	ServerHost     string
+	ServerPort     string
+	ServerHttpPort string
 }
 
 type Post struct {

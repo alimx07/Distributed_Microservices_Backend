@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"net/http"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/cachedRepo"
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/models"
@@ -11,7 +12,6 @@ import (
 	pb "github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
 
@@ -38,7 +38,7 @@ func (ps *postService) start() error {
 	}
 	grpcserver := grpc.NewServer()
 	pb.RegisterPostSeriveServer(grpcserver, ps)
-	reflection.Register(grpcserver)
+	// reflection.Register(grpcserver)
 	return grpcserver.Serve(listener)
 }
 
@@ -66,11 +66,12 @@ func (ps *postService) CreateComment(ctx context.Context, req *pb.Comment) (*pb.
 		Post_id: req.GetPostId(),
 		Content: req.GetComment(),
 	}
-	err := ps.presistanceDB.CreateComment(ctx, comment)
+	id, err := ps.presistanceDB.CreateComment(ctx, comment)
 	if err != nil {
 		log.Printf("Failed to create comment on post{%v} by user{%v}: %v", comment.Post_id, comment.User_id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to create comment Due to internal Issues")
 	}
+	ps.cache.UpdateCommentsCounter(ctx, id, 1)
 	return &pb.Response{
 		Message: "Comment Created Successfully",
 	}, nil
@@ -81,11 +82,12 @@ func (ps *postService) CreateLike(ctx context.Context, req *pb.Like) (*pb.Respon
 		User_id: req.UserId,
 		Post_id: req.PostId,
 	}
-	err := ps.presistanceDB.CreateLike(ctx, like)
+	id, err := ps.presistanceDB.CreateLike(ctx, like)
 	if err != nil {
 		log.Printf("Failed to create Like on post{%v} by user{%v} : %v", like.Post_id, like.User_id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to create like Due to internal Issues")
 	}
+	ps.cache.UpdateLikesCounter(ctx, id, 1)
 	return &pb.Response{
 		Message: "Like Created Successfully",
 	}, nil
@@ -101,7 +103,7 @@ func (ps *postService) DeletePost(ctx context.Context, req *pb.DeletePostRequest
 
 	err = ps.cache.DeletePost(ctx, id)
 	if err != nil {
-		// in case of cache failing , then there will be inconsistency as users can still see the post
+		// in case of cache failing , then there will be inconsistency as users can still see the post until expiration
 		// even it is deleted. a background proccess can be spin up to take cache failed operations and
 		// retry them again. for simplecity just log the error now
 		log.Printf("Failed to Delete post {%v} from the cache: {%v}\n", id, err.Error())
@@ -120,6 +122,7 @@ func (ps *postService) DeleteComment(ctx context.Context, req *pb.DeleteCommentR
 		log.Printf("Failed to delete Comment{%v}: %v\n", id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to Delete Comment Due to Internal Issues")
 	}
+	ps.cache.UpdateCommentsCounter(ctx, id, -1)
 	return &pb.Response{
 		Message: "Comment Deleted Successfully",
 	}, nil
@@ -134,7 +137,54 @@ func (ps *postService) DeleteLike(ctx context.Context, req *pb.DeleteLikeRequest
 		log.Printf("Failed to delete Like{%v} for user{%v}: %v\n", id, user_id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to Delete Like Due to Internal Issues")
 	}
+	ps.cache.UpdateLikesCounter(ctx, id, -1)
 	return &pb.Response{
 		Message: "Like Deleted Successfully",
 	}, nil
+}
+
+func (ps *postService) GetPosts(ctx context.Context, req *pb.GetPostRequest) (*pb.GetPostResponse, error) {
+	ids := req.GetPostId()
+	var posts []models.Post
+	var err error
+	posts, err = ps.cache.GetPosts(ctx, ids)
+	if err != nil {
+		log.Println("Error in Get Posts from Cache: ", err.Error())
+		posts, err = ps.presistanceDB.GetPosts(ctx, ids)
+		if err != nil {
+			log.Println("Error in GetPosts From DB, ", err.Error())
+			return nil, err
+		}
+	}
+	resPosts := make([]*pb.Post, 0, len(posts))
+	for _, post := range posts {
+		resPosts = append(resPosts, &pb.Post{
+			UserId:        post.CachedPost.User_id,
+			Content:       post.CachedPost.Content,
+			CreatedAt:     post.CachedPost.Created_at.Unix(),
+			LikesCount:    post.Likes_count,
+			CommentsCount: post.Comments_count,
+		})
+	}
+	return &pb.GetPostResponse{
+		Post: resPosts,
+	}, nil
+}
+
+func (ps *postService) StartHealthServer() error {
+	router := http.NewServeMux()
+
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status": "ok"}`))
+		w.Write([]byte(`{"service": "post_service"}`))
+	})
+
+	var handler http.Handler = router
+	server := &http.Server{
+		Addr:    net.JoinHostPort(ps.config.ServerHost, ps.config.ServerHttpPort),
+		Handler: handler,
+	}
+	log.Printf("PostServer HTTP starting on %s:%s\n", ps.config.ServerHost, ps.config.ServerHttpPort)
+	return server.ListenAndServe()
 }

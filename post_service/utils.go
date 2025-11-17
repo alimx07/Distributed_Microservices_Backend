@@ -26,11 +26,12 @@ func LoadConfig() (models.Config, error) {
 		DBReplicaPassword: os.Getenv("DB_REPLICA_PASSWORD"),
 		DBReplicaName:     os.Getenv("DB_REPLICA_NAME"),
 
-		ServerPort:    os.Getenv("SERVER_PORT"),
-		ServerHost:    os.Getenv("SERVER_HOST"),
-		CachePassword: os.Getenv("CACHE_PASSWORD"),
-		CacheHost:     os.Getenv("CACHE_HOST"),
-		CachePort:     os.Getenv("CACHE_PORT"),
+		ServerPort:     os.Getenv("SERVER_PORT"),
+		ServerHost:     os.Getenv("SERVER_HOST"),
+		ServerHttpPort: os.Getenv("SERVER_HTTP_PORT"),
+		CachePassword:  os.Getenv("CACHE_PASSWORD"),
+		CacheHost:      os.Getenv("CACHE_HOST"),
+		CachePort:      os.Getenv("CACHE_PORT"),
 	}
 	return config, nil
 }
