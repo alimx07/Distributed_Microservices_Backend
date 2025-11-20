@@ -232,7 +232,7 @@ const file_feed_proto_rawDesc = "" +
 	"likesCount\x12%\n" +
 	"\x0ecomments_count\x18\x05 \x01(\x03R\rcommentsCount2;\n" +
 	"\vFeedService\x12,\n" +
-	"\aGetFeed\x12\x0f.GetFeedRequest\x1a\x10.GetFeedResponseB\x17Z\x15/services_bindings_gob\x06proto3"
+	"\aGetFeed\x12\x0f.GetFeedRequest\x1a\x10.GetFeedResponseB\x19Z\x17../services_bindings_gob\x06proto3"
 
 var (
 	file_feed_proto_rawDescOnce sync.Once

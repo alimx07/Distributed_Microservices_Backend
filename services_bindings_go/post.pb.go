@@ -23,7 +23,7 @@ const (
 
 type Post struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int32                  `protobuf:"varint,1,opt,name=UserId,proto3" json:"UserId,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	Content       string                 `protobuf:"bytes,2,opt,name=Content,proto3" json:"Content,omitempty"`
 	CreatedAt     int64                  `protobuf:"varint,3,opt,name=CreatedAt,proto3" json:"CreatedAt,omitempty"`
 	LikesCount    int64                  `protobuf:"varint,4,opt,name=likes_count,json=likesCount,proto3" json:"likes_count,omitempty"`
@@ -62,11 +62,11 @@ func (*Post) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Post) GetUserId() int32 {
+func (x *Post) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
-	return 0
+	return ""
 }
 
 func (x *Post) GetContent() string {
@@ -99,8 +99,8 @@ func (x *Post) GetCommentsCount() int64 {
 
 type Comment struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        int64                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
-	UserId        int32                  `protobuf:"varint,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
+	PostId        string                 `protobuf:"bytes,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	Comment       string                 `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
 	CreatedAt     int64                  `protobuf:"varint,4,opt,name=CreatedAt,proto3" json:"CreatedAt,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -137,18 +137,18 @@ func (*Comment) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Comment) GetPostId() int64 {
+func (x *Comment) GetPostId() string {
 	if x != nil {
 		return x.PostId
 	}
-	return 0
+	return ""
 }
 
-func (x *Comment) GetUserId() int32 {
+func (x *Comment) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
-	return 0
+	return ""
 }
 
 func (x *Comment) GetComment() string {
@@ -167,8 +167,8 @@ func (x *Comment) GetCreatedAt() int64 {
 
 type Like struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        int64                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
-	UserId        int32                  `protobuf:"varint,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
+	PostId        string                 `protobuf:"bytes,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -203,23 +203,23 @@ func (*Like) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Like) GetPostId() int64 {
+func (x *Like) GetPostId() string {
 	if x != nil {
 		return x.PostId
 	}
-	return 0
+	return ""
 }
 
-func (x *Like) GetUserId() int32 {
+func (x *Like) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
-	return 0
+	return ""
 }
 
 type DeletePostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        int64                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
+	PostId        string                 `protobuf:"bytes,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -254,16 +254,16 @@ func (*DeletePostRequest) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *DeletePostRequest) GetPostId() int64 {
+func (x *DeletePostRequest) GetPostId() string {
 	if x != nil {
 		return x.PostId
 	}
-	return 0
+	return ""
 }
 
 type DeleteCommentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	CommentId     int64                  `protobuf:"varint,1,opt,name=CommentId,proto3" json:"CommentId,omitempty"`
+	CommentId     string                 `protobuf:"bytes,1,opt,name=CommentId,proto3" json:"CommentId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -298,17 +298,17 @@ func (*DeleteCommentRequest) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *DeleteCommentRequest) GetCommentId() int64 {
+func (x *DeleteCommentRequest) GetCommentId() string {
 	if x != nil {
 		return x.CommentId
 	}
-	return 0
+	return ""
 }
 
 type DeleteLikeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        int64                  `protobuf:"varint,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
-	UserId        int32                  `protobuf:"varint,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
+	PostId        string                 `protobuf:"bytes,1,opt,name=PostId,proto3" json:"PostId,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -343,18 +343,18 @@ func (*DeleteLikeRequest) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *DeleteLikeRequest) GetPostId() int64 {
+func (x *DeleteLikeRequest) GetPostId() string {
 	if x != nil {
 		return x.PostId
 	}
-	return 0
+	return ""
 }
 
-func (x *DeleteLikeRequest) GetUserId() int32 {
+func (x *DeleteLikeRequest) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
-	return 0
+	return ""
 }
 
 type GetPostRequest struct {
@@ -496,27 +496,27 @@ const file_post_proto_rawDesc = "" +
 	"\n" +
 	"post.proto\"\x9e\x01\n" +
 	"\x04Post\x12\x16\n" +
-	"\x06UserId\x18\x01 \x01(\x05R\x06UserId\x12\x18\n" +
+	"\x06UserId\x18\x01 \x01(\tR\x06UserId\x12\x18\n" +
 	"\aContent\x18\x02 \x01(\tR\aContent\x12\x1c\n" +
 	"\tCreatedAt\x18\x03 \x01(\x03R\tCreatedAt\x12\x1f\n" +
 	"\vlikes_count\x18\x04 \x01(\x03R\n" +
 	"likesCount\x12%\n" +
 	"\x0ecomments_count\x18\x05 \x01(\x03R\rcommentsCount\"q\n" +
 	"\aComment\x12\x16\n" +
-	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\x12\x16\n" +
-	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\x12\x18\n" +
+	"\x06PostId\x18\x01 \x01(\tR\x06PostId\x12\x16\n" +
+	"\x06UserId\x18\x02 \x01(\tR\x06UserId\x12\x18\n" +
 	"\acomment\x18\x03 \x01(\tR\acomment\x12\x1c\n" +
 	"\tCreatedAt\x18\x04 \x01(\x03R\tCreatedAt\"6\n" +
 	"\x04Like\x12\x16\n" +
-	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\x12\x16\n" +
-	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\"+\n" +
+	"\x06PostId\x18\x01 \x01(\tR\x06PostId\x12\x16\n" +
+	"\x06UserId\x18\x02 \x01(\tR\x06UserId\"+\n" +
 	"\x11DeletePostRequest\x12\x16\n" +
-	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\"4\n" +
+	"\x06PostId\x18\x01 \x01(\tR\x06PostId\"4\n" +
 	"\x14DeleteCommentRequest\x12\x1c\n" +
-	"\tCommentId\x18\x01 \x01(\x03R\tCommentId\"C\n" +
+	"\tCommentId\x18\x01 \x01(\tR\tCommentId\"C\n" +
 	"\x11DeleteLikeRequest\x12\x16\n" +
-	"\x06PostId\x18\x01 \x01(\x03R\x06PostId\x12\x16\n" +
-	"\x06UserId\x18\x02 \x01(\x05R\x06UserId\"(\n" +
+	"\x06PostId\x18\x01 \x01(\tR\x06PostId\x12\x16\n" +
+	"\x06UserId\x18\x02 \x01(\tR\x06UserId\"(\n" +
 	"\x0eGetPostRequest\x12\x16\n" +
 	"\x06PostId\x18\x01 \x03(\x03R\x06PostId\",\n" +
 	"\x0fGetPostResponse\x12\x19\n" +
@@ -535,7 +535,7 @@ const file_post_proto_rawDesc = "" +
 	"\rDeleteComment\x12\x15.DeleteCommentRequest\x1a\t.Response\"\x00\x12-\n" +
 	"\n" +
 	"DeleteLike\x12\x12.DeleteLikeRequest\x1a\t.Response\"\x00\x12/\n" +
-	"\bGetPosts\x12\x0f.GetPostRequest\x1a\x10.GetPostResponse\"\x00B\x17Z\x15/services_bindings_gob\x06proto3"
+	"\bGetPosts\x12\x0f.GetPostRequest\x1a\x10.GetPostResponse\"\x00B\x19Z\x17../services_bindings_gob\x06proto3"
 
 var (
 	file_post_proto_rawDescOnce sync.Once
