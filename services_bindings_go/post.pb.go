@@ -359,7 +359,7 @@ func (x *DeleteLikeRequest) GetUserId() string {
 
 type GetPostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        []int64                `protobuf:"varint,1,rep,packed,name=PostId,proto3" json:"PostId,omitempty"`
+	PostId        []string               `protobuf:"bytes,1,rep,name=PostId,proto3" json:"PostId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -394,7 +394,7 @@ func (*GetPostRequest) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GetPostRequest) GetPostId() []int64 {
+func (x *GetPostRequest) GetPostId() []string {
 	if x != nil {
 		return x.PostId
 	}
@@ -518,7 +518,7 @@ const file_post_proto_rawDesc = "" +
 	"\x06PostId\x18\x01 \x01(\tR\x06PostId\x12\x16\n" +
 	"\x06UserId\x18\x02 \x01(\tR\x06UserId\"(\n" +
 	"\x0eGetPostRequest\x12\x16\n" +
-	"\x06PostId\x18\x01 \x03(\x03R\x06PostId\",\n" +
+	"\x06PostId\x18\x01 \x03(\tR\x06PostId\",\n" +
 	"\x0fGetPostResponse\x12\x19\n" +
 	"\x04post\x18\x01 \x03(\v2\x05.PostR\x04post\"$\n" +
 	"\bResponse\x12\x18\n" +
