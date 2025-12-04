@@ -23,7 +23,8 @@ services:
       - PUBLIC_KEY_ADDR=http://user-service1:8080/public-key
       
       # Redis Configuration (for rate limiting)
-      - REDIS_ADDR=redis-node-1:6379
+      - CLUSTER_ADDR=redis-node-1:6379
+      - REDIS_ADDR=redis:6379
     ports:
       - "8080:8080"
     networks:
@@ -87,9 +88,9 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - 7006:6379
+      - 7007:6379
     networks:
-      - app_net
+      - gateway_net
     command: redis-server --appendonly yes
 
 

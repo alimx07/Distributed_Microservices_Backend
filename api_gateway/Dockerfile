@@ -13,7 +13,7 @@ COPY --from=builder /app/app .
 
 COPY config.yaml .
 COPY rate_rules.json .
-COPY redis_script.lua .
+COPY ./scripts ./
 
 COPY _proto/ ./_proto/
 
