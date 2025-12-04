@@ -32,26 +32,26 @@ type Post struct {
 }
 
 type CachedPost struct {
-	Id         int64     `json:"id"`
-	User_id    int32     `json:"user_id"`
+	Id         string    `json:"id"`
+	User_id    string    `json:"user_id"`
 	Content    string    `json:"content"`
 	Created_at time.Time `json:"created_at"`
 }
 
 type CachedCounter struct {
-	Id       int64
+	Id       string
 	Likes    int64
 	Comments int64
 }
 type Comment struct {
-	Id         int64
-	User_id    int32
-	Post_id    int64
+	Id         string
+	User_id    string
+	Post_id    string
 	Content    string
 	Created_at time.Time
 }
 
 type Like struct {
-	Post_id int64
-	User_id int32
+	Post_id string
+	User_id string
 }

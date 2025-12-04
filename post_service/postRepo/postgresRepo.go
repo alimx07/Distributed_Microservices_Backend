@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/models"
 	"github.com/lib/pq"
+	"github.com/oklog/ulid/v2"
 )
 
 type PostgresRepo struct {
@@ -24,48 +27,49 @@ func NewPostgresRepo(primaryDB, replicaDB *sql.DB) *PostgresRepo {
 }
 
 // Write operations use primaryDB
-func (ps *PostgresRepo) CreatePost(ctx context.Context, post models.Post) (int64, error) {
-	var id int64
-	err := ps.primaryDB.QueryRowContext(ctx,
-		`INSERT INTO posts (user_id, content) 
-        VALUES ($1, $2) RETURNING id`,
-		post.User_id, post.Content).Scan(&id)
+func (ps *PostgresRepo) CreatePost(ctx context.Context, post models.Post) (string, error) {
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+	postID := ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
+	_, err := ps.primaryDB.ExecContext(ctx,
+		`INSERT INTO posts (post_id , user_id, content) 
+        VALUES ($1, $2, $3)`,
+		postID, post.CachedPost.User_id, post.CachedPost.Content)
 	if err != nil {
 		log.Println("Error creating post: ", err.Error())
-		return 0, err
+		return "", err
 	}
-	return id, nil
+	return postID, nil
 }
 
-func (ps *PostgresRepo) CreateComment(ctx context.Context, comment models.Comment) (int64, error) {
-	var id int64
-	err := ps.primaryDB.QueryRowContext(ctx,
-		`INSERT INTO comments (user_id, post_id ,content) 
+func (ps *PostgresRepo) CreateComment(ctx context.Context, comment models.Comment) (string, error) {
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+	commentID := ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
+	_, err := ps.primaryDB.ExecContext(ctx,
+		`INSERT INTO comments (comment_id , user_id, post_id ,content) 
         VALUES ($1, $2 , $3)`,
-		comment.User_id, comment.Post_id, comment.Content).Scan(&id)
+		commentID, comment.User_id, comment.Post_id, comment.Content)
 	if err != nil {
 		log.Println("Error creating Comment: ", err.Error())
-		return 0, err
+		return "", err
 	}
-	return id, nil
+	return commentID, nil
 }
 
-func (ps *PostgresRepo) CreateLike(ctx context.Context, like models.Like) (int64, error) {
-	var id int64
-	err := ps.primaryDB.QueryRowContext(ctx,
+func (ps *PostgresRepo) CreateLike(ctx context.Context, like models.Like) error {
+	_, err := ps.primaryDB.ExecContext(ctx,
 		`INSERT INTO likes (user_id, post_id) 
         VALUES ($1, $2)`,
-		like.User_id, like.Post_id).Scan(&id)
+		like.User_id, like.Post_id)
 	if err != nil {
 		log.Println("Error creating Like: ", err.Error())
-		return 0, err
+		return err
 	}
-	return id, nil
+	return nil
 }
 
-func (ps *PostgresRepo) DeletePost(ctx context.Context, id int64) error {
+func (ps *PostgresRepo) DeletePost(ctx context.Context, id string) error {
 	_, err := ps.primaryDB.ExecContext(ctx,
-		`DELETE FROM posts where id = $1`, id)
+		`DELETE FROM posts where post_id = $1`, id)
 	if err != nil {
 		log.Printf("Error Deleting post{%v} : %v\n", id, err.Error())
 		return err
@@ -73,9 +77,9 @@ func (ps *PostgresRepo) DeletePost(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (ps *PostgresRepo) DeleteComment(ctx context.Context, id int64) error {
+func (ps *PostgresRepo) DeleteComment(ctx context.Context, id string) error {
 	_, err := ps.primaryDB.ExecContext(ctx,
-		`DELETE FROM comments where id = $1`, id)
+		`DELETE FROM comments where comment_id = $1`, id)
 	if err != nil {
 		log.Printf("Error Deleting comment{%v} : %v\n", id, err.Error())
 		return err
@@ -83,7 +87,7 @@ func (ps *PostgresRepo) DeleteComment(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (ps *PostgresRepo) DeleteLike(ctx context.Context, post_id int64, userId int32) error {
+func (ps *PostgresRepo) DeleteLike(ctx context.Context, post_id string, userId string) error {
 	_, err := ps.primaryDB.ExecContext(ctx,
 		`DELETE FROM likes where post_id = $1 AND user_id = $2`, post_id, userId)
 	if err != nil {
@@ -94,13 +98,13 @@ func (ps *PostgresRepo) DeleteLike(ctx context.Context, post_id int64, userId in
 }
 
 // Read operations use replicaDB
-func (ps *PostgresRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, error) {
+func (ps *PostgresRepo) GetPosts(ctx context.Context, ids []string) ([]models.Post, error) {
 	if len(ids) == 0 {
 		return []models.Post{}, nil
 	}
 
 	rows, err := ps.replicaDB.QueryContext(ctx,
-		`SELECT id, user_id, content , created_at , likes_count , comments_count FROM posts WHERE id = ANY($1)`,
+		`SELECT post_id, user_id, content , created_at , likes_count , comments_count FROM posts WHERE post_id = ANY($1)`,
 		pq.Array(ids))
 	if err != nil {
 		log.Println("Error querying posts: ", err.Error())
@@ -126,9 +130,9 @@ func (ps *PostgresRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Pos
 	return posts, nil
 }
 
-func (ps *PostgresRepo) GetComments(ctx context.Context, id int64) ([]models.Comment, error) {
+func (ps *PostgresRepo) GetComments(ctx context.Context, id string) ([]models.Comment, error) {
 	rows, err := ps.replicaDB.QueryContext(ctx,
-		`SELECT id, user_id, post_id, content, created_at FROM comments WHERE post_id = $1`, id)
+		`SELECT comment_id, user_id, post_id, content, created_at FROM comments WHERE post_id = $1`, id)
 	if err != nil {
 		log.Println("Error querying comments: ", err.Error())
 		return nil, err
@@ -147,7 +151,7 @@ func (ps *PostgresRepo) GetComments(ctx context.Context, id int64) ([]models.Com
 	return comments, nil
 }
 
-func (ps *PostgresRepo) GetLikes(ctx context.Context, id int64) ([]models.Like, error) {
+func (ps *PostgresRepo) GetLikes(ctx context.Context, id string) ([]models.Like, error) {
 	rows, err := ps.replicaDB.QueryContext(ctx,
 		`SELECT user_id, post_id FROM likes WHERE post_id = $1`, id)
 	if err != nil {
@@ -168,13 +172,13 @@ func (ps *PostgresRepo) GetLikes(ctx context.Context, id int64) ([]models.Like, 
 	return likes, nil
 }
 
-func (ps *PostgresRepo) GetCounters(ctx context.Context, ids []int64) ([]models.CachedCounter, error) {
+func (ps *PostgresRepo) GetCounters(ctx context.Context, ids []string) ([]models.CachedCounter, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
 
 	rows, err := ps.replicaDB.QueryContext(ctx,
-		`SELECT id, likes_count , comments_count FROM posts WHERE id = ANY($1)`,
+		`SELECT post_id, likes_count , comments_count FROM posts WHERE post_id = ANY($1)`,
 		pq.Array(ids))
 	if err != nil {
 		log.Println("Error querying posts: ", err.Error())
@@ -209,8 +213,8 @@ func (ps *PostgresRepo) UpdateCounters(ctx context.Context, counters []models.Ca
 	query := fmt.Sprintf(`UPDATE posts p SET 
                         likes_count = p.likes_count + v.likes, 
                         comments_count = p.comments_count + v.comments
-                        FROM (VALUES %s) AS v(id, likes, comments) 
-                        WHERE v.id = p.id`, strings.Join(values, ","))
+                        FROM (VALUES %s) AS v(post_id, likes, comments) 
+                        WHERE v.post_id = p.post_id`, strings.Join(values, ","))
 	_, err := ps.primaryDB.ExecContext(ctx, query)
 	if err != nil {
 		log.Printf("Error In updating Counters: %v", err.Error())

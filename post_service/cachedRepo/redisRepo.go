@@ -38,7 +38,7 @@ func (rs *redisRepo) CachePost(ctx context.Context, post models.CachedPost) erro
 	return err
 }
 
-func (rs *redisRepo) DeletePost(ctx context.Context, id int64) error {
+func (rs *redisRepo) DeletePost(ctx context.Context, id string) error {
 	// Remove from cache atomically
 	pipe := rs.redisClient.TxPipeline()
 	pipe.Del(ctx, postKey(id))
@@ -48,21 +48,21 @@ func (rs *redisRepo) DeletePost(ctx context.Context, id int64) error {
 	return err
 }
 
-func (rs *redisRepo) UpdateLikesCounter(ctx context.Context, id int64, delta int64) {
+func (rs *redisRepo) UpdateLikesCounter(ctx context.Context, id string, delta int64) {
 	pipe := rs.redisClient.Pipeline()
 	pipe.HIncrBy(ctx, counterKey(id), "likes", delta)
 	pipe.SAdd(ctx, "counters:set", counterKey(id))
 	pipe.Exec(ctx)
 }
 
-func (rs *redisRepo) UpdateCommentsCounter(ctx context.Context, id int64, delta int64) {
+func (rs *redisRepo) UpdateCommentsCounter(ctx context.Context, id string, delta int64) {
 	pipe := rs.redisClient.Pipeline()
 	pipe.HIncrBy(ctx, counterKey(id), "comments", delta)
 	pipe.SAdd(ctx, "counters:set", counterKey(id))
 	pipe.Exec(ctx)
 }
 
-func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, error) {
+func (rs *redisRepo) GetPosts(ctx context.Context, ids []string) ([]models.Post, error) {
 	if len(ids) == 0 {
 		return []models.Post{}, nil
 	}
@@ -72,24 +72,26 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []int64) ([]models.Post, 
 	pipe := rs.redisClient.Pipeline()
 
 	for i, id := range ids {
-		keys[i] = fmt.Sprintf("post:%d", id)
+		keys[i] = fmt.Sprintf("post:%v", id)
 		cmds[i] = pipe.HGetAll(ctx, counterKey(id))
 	}
 	// From Cache First
 	posts := make([]models.Post, 0, len(ids))
-	var missedPostIDs []int64
-	var missedCounter []int64
+	var missedPostIDs []string
+	var missedCounter []string
 
 	mgetvalues := pipe.MGet(ctx, keys...)
 	_, err := pipe.Exec(ctx)
 
 	if err != nil {
 		log.Println("Error in Loading data from redis caches:", err.Error())
+		return nil, err
 	}
 
 	postVals := mgetvalues.Val()
+	log.Println("PostVals len: ", len(postVals))
 
-	idx := make(map[int64]int)
+	idx := make(map[string]int)
 	for i, val := range postVals {
 
 		// post cache miss
@@ -213,7 +215,7 @@ func (rs *redisRepo) SyncCounters() {
 						log.Println(err.Error())
 						continue
 					}
-					cnt_key, _ := strconv.ParseInt(strings.Split(key, ":")[1], 10, 64)
+					cnt_key := strings.Split(key, ":")[1]
 					cachedcounter := models.CachedCounter{
 						Id: cnt_key,
 					}
@@ -236,11 +238,11 @@ func (rs *redisRepo) SyncCounters() {
 	}
 }
 
-func postKey(id int64) string {
+func postKey(id string) string {
 	return fmt.Sprintf("post:%v", id)
 }
 
-func counterKey(id int64) string {
+func counterKey(id string) string {
 	return fmt.Sprintf("post:%v:counters", id)
 }
 

@@ -28,11 +28,11 @@ services:
       - DB_REPLICA_PORT=5432
       - DB_REPLICA_USER=postgres
       - DB_REPLICA_PASSWORD=mypassword
-      - DB_REPLICA_NAME=postsdb
+      - DB_REPLICA_NAME=postdb
       - SERVER_HOST=0.0.0.0
       - SERVER_HTTP_PORT=8080
-      - SERVER_PORT=50051
-      - CACHE_ADDR=redis-node-1
+      - SERVER_PORT=50061
+      - CACHE_HOST=redis-node-1
       - CACHE_PORT=6379
     ports:
       - 50061:50061

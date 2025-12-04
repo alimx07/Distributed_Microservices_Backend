@@ -3,8 +3,9 @@ module github.com/alimx07/Distributed_Microservices_Backend/post_service
 go 1.25.0
 
 require (
-	github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0-20251106212111-67c1f3fd3a79
+	github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0-20251120191054-e815ff46dbb3
 	github.com/lib/pq v1.10.9
+	github.com/oklog/ulid/v2 v2.1.1
 	github.com/redis/go-redis/v9 v9.13.0
 	google.golang.org/grpc v1.75.0
 )

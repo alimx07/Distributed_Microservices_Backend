@@ -43,8 +43,11 @@ func (ps *postService) start() error {
 }
 
 func (ps *postService) CreatePost(ctx context.Context, req *pb.Post) (*pb.Response, error) {
+	log.Println("DATA: ", req.GetContent(), "  ", req.GetUserId())
 	post := models.CachedPost{User_id: req.GetUserId(),
 		Content: req.GetContent()}
+
+	log.Println(post.User_id, post.Content)
 	id, err := ps.presistanceDB.CreatePost(ctx, models.Post{CachedPost: post})
 	if err != nil {
 		log.Printf("Failed to create post for user{%v}: {%v}\n", post.User_id, err.Error())
@@ -82,12 +85,12 @@ func (ps *postService) CreateLike(ctx context.Context, req *pb.Like) (*pb.Respon
 		User_id: req.UserId,
 		Post_id: req.PostId,
 	}
-	id, err := ps.presistanceDB.CreateLike(ctx, like)
+	err := ps.presistanceDB.CreateLike(ctx, like)
 	if err != nil {
 		log.Printf("Failed to create Like on post{%v} by user{%v} : %v", like.Post_id, like.User_id, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to create like Due to internal Issues")
 	}
-	ps.cache.UpdateLikesCounter(ctx, id, 1)
+	ps.cache.UpdateLikesCounter(ctx, like.Post_id, 1)
 	return &pb.Response{
 		Message: "Like Created Successfully",
 	}, nil
