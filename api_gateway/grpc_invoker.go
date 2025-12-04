@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -111,7 +110,7 @@ func (g *GRPCInvoker) registerService(svc protoreflect.ServiceDescriptor) error 
 	return nil
 }
 
-func (g *GRPCInvoker) Invoke(ctx context.Context, conn *grpc.ClientConn, serviceName string, methodName string, requestJSON []byte, userID string) ([]byte, error) {
+func (g *GRPCInvoker) Invoke(ctx context.Context, conn *grpc.ClientConn, serviceName string, methodName string, requestJSON []byte) ([]byte, error) {
 
 	sd, exists := g.serviceDescriptors[serviceName]
 	if !exists {
@@ -128,20 +127,19 @@ func (g *GRPCInvoker) Invoke(ctx context.Context, conn *grpc.ClientConn, service
 	unmarshaler := protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}
+	log.Println("Message: ", reqMsg.String())
 	if err := unmarshaler.Unmarshal(requestJSON, reqMsg); err != nil {
+		log.Println("MARSHAL PROBLEM IN GRPC INVOKER: ", reqMsg.String())
+		log.Println(err.Error())
 		return nil, fmt.Errorf("failed to unmarshal request: %w", err)
 	}
 
 	respMsg := dynamicpb.NewMessage(md.outputDescriptor)
 
-	// Add metadata if userID is provided
-	if userID != "" {
-		ctx = metadata.AppendToOutgoingContext(ctx, "UserID", userID)
-	}
-
 	// Invoke the method
 	err := conn.Invoke(ctx, md.fullMethodName, reqMsg, respMsg)
 	if err != nil {
+		log.Println(err.Error())
 		return nil, fmt.Errorf("failed to invoke gRPC method: %w", err)
 	}
 
@@ -152,6 +150,7 @@ func (g *GRPCInvoker) Invoke(ctx context.Context, conn *grpc.ClientConn, service
 	}
 	responseJSON, err := marshaler.Marshal(respMsg)
 	if err != nil {
+		log.Println(err.Error())
 		return nil, fmt.Errorf("failed to marshal response: %w", err)
 	}
 

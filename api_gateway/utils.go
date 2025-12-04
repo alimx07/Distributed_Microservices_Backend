@@ -34,6 +34,30 @@ func InitLogger() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
+func loadLuaScripts(config *models.AppConfig) error {
+	script, err := os.ReadFile(config.Redis.AddScriptPath)
+	if err != nil {
+		log.Println("Error in Loading ", config.Redis.AddScriptPath)
+		return err
+	}
+	config.Redis.AddScript = string(script)
+	script, err = os.ReadFile(config.Redis.CheckScriptPath)
+	if err != nil {
+		log.Println("Error in Loading ", config.Redis.CheckScript)
+		return err
+	}
+	config.Redis.CheckScript = string(script)
+	script, err = os.ReadFile(config.RateLimiting.ScriptPath)
+	if err != nil {
+		log.Println("Error in Loading ", config.RateLimiting.ScriptPath)
+		return err
+	}
+	config.RateLimiting.RateLimitingScript = string(script)
+
+	log.Println("---> All Lua Scripts Loaded successfully")
+	return nil
+}
+
 type PublicKeyResponse struct {
 	PublicKey string `json:"publicKey"`
 }
@@ -88,10 +112,12 @@ func LoadAppConfig(filename string) (*models.AppConfig, error) {
 		config.Server.PublickeyAddr = publicKeyAddr
 	}
 	if clusterAddr := os.Getenv("CLUSTER_ADDR"); clusterAddr != "" {
+		log.Println(clusterAddr)
 		config.RateLimiting.Addr = clusterAddr
 	}
 
 	if redisAddr := os.Getenv("REDIS_ADDR"); redisAddr != "" {
+		log.Println(redisAddr)
 		config.Redis.RedisAddr = redisAddr
 	}
 
@@ -116,14 +142,19 @@ func ValidateToken(token string, pubKey []byte, r *redis.Client, luaScript strin
 	} else if res, ok := result.(int64); ok && res == 1 {
 		return "", errors.New("token revoked")
 	}
+	rsaPubKey, err := jwt.ParseRSAPublicKeyFromPEM(pubKey)
+	if err != nil {
+		log.Printf("Failed to parse RSA public key: %v", err)
+		return "", errors.New("invalid public key")
+	}
 	parser := jwt.NewParser(
-		jwt.WithValidMethods([]string{jwt.SigningMethodEdDSA.Alg()}),
+		jwt.WithValidMethods([]string{"RS256"}),
 		jwt.WithAudience("api_gateway"),
 		jwt.WithIssuer("users_service"),
 	)
 	claims := jwt.RegisteredClaims{}
 	parse, err := parser.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
-		return pubKey, nil
+		return rsaPubKey, nil
 	})
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
@@ -141,11 +172,13 @@ func ValidateToken(token string, pubKey []byte, r *redis.Client, luaScript strin
 }
 
 type RedisPool struct {
-	pool chan *redis.Client
+	pool     chan *redis.Client
+	numConns int
 }
 
 // Create new Connection pool of size N
 func NewRedisPool(addr string, n int) (*RedisPool, error) {
+	log.Println("------>", addr, n)
 	var client *redis.Client
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -166,6 +199,7 @@ func NewRedisPool(addr string, n int) (*RedisPool, error) {
 	if numOfCon == 0 {
 		return nil, errors.New("no Connections opened with redis")
 	}
+	rsPool.numConns = numOfCon
 	return rsPool, nil
 }
 

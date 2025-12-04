@@ -5,7 +5,7 @@
     "refillRate": 10
   },
   {
-    "name": "UserID",
+    "name": "UserId",
     "limit": 100,
     "refillRate": 10
   }

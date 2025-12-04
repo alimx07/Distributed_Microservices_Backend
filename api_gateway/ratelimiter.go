@@ -32,7 +32,7 @@ type Rule struct {
 }
 
 func NewRateLimiter(ctx context.Context, config models.RateLimitingConfig) (*RateLimiter, error) {
-	p, err := NewRedisPool(config.Addr, config.PoolSize)
+	p, err := NewRedisPool(config.Addr, config.RateLimiterPoolSize)
 	if err != nil {
 		return nil, err
 	}
@@ -41,11 +41,7 @@ func NewRateLimiter(ctx context.Context, config models.RateLimitingConfig) (*Rat
 	if err != nil {
 		return nil, err
 	}
-	data, err := os.ReadFile(config.ScriptPath)
-	if err != nil {
-		return nil, err
-	}
-	return &RateLimiter{ctx: ctx, rules: rules, redis: p, script: string(data)}, nil
+	return &RateLimiter{ctx: ctx, rules: rules, redis: p, script: config.RateLimitingScript}, nil
 }
 
 func (rl *RateLimiter) Allow(r *http.Request) (bool, error) {
@@ -115,6 +111,13 @@ func (rl *RateLimiter) matchRule(r *http.Request) ([]string, []interface{}) {
 	// Id can be composite of userID + endpoint
 	// like : User123:Post
 	return keys, args
+}
+
+func (r *RateLimiter) Close() {
+	for range r.redis.numConns {
+		conn := r.redis.Get()
+		conn.Conn().Close()
+	}
 }
 
 func loadRules(configPath string) ([]Rule, error) {

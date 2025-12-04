@@ -15,7 +15,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
-
+	err = loadLuaScripts(config)
+	if err != nil {
+		log.Fatalf("Failed to LuaScripts : %v", err)
+	}
 	rateLimiter, err := NewRateLimiter(ctx, config.RateLimiting)
 	if err != nil {
 		log.Fatalf("Failed to initialize rate limiter: %v", err)
@@ -37,13 +40,6 @@ func main() {
 	grpcInvoker := NewGRPCInvoker()
 	log.Println("gRPC invoker initialized")
 
-	redis, err := NewRedisPool(config.Redis.RedisAddr, config.Redis.PoolSize)
-
-	if err != nil {
-		// Do not kill the service. just log
-		log.Println("Warning: Redis Connection failed for DenyList instance")
-	}
-
 	for serviceName, serviceConfig := range config.Services {
 		if serviceConfig.ProtosetPath == "" {
 			log.Printf("Warning: No protoset path configured for service %s", serviceName)
@@ -58,8 +54,15 @@ func main() {
 		}
 	}
 
-	handler := NewHandler(config, loadBalancers, grpcInvoker, rateLimiter, redis)
-	log.Println("Handler initialized")
+	redisPool, err := NewRedisPool(config.Redis.RedisAddr, config.Redis.RedisPoolSize)
+	if err != nil {
+		log.Fatalf("Failed to create Redis pool: %v", err)
+	}
+
+	handler := NewHandler(config, loadBalancers, grpcInvoker, rateLimiter, redisPool)
+	if handler == nil {
+		log.Fatal("Failed to create handler")
+	}
 
 	// Initialize and start server
 	server := NewServer(handler, config)

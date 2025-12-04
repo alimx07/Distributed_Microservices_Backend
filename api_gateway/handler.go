@@ -106,7 +106,7 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Build Request body , add any params found
-	requestData, err := h.buildRequestData(r, route, body)
+	requestData, err := h.buildRequestData(r, route, body, userID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to build request: %v", err), http.StatusBadRequest)
 		return
@@ -134,7 +134,6 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		route.GRPCService,
 		route.GRPCMethod,
 		requestData,
-		userID,
 	)
 	if err != nil {
 		log.Printf("gRPC invocation error: %v", err)
@@ -153,7 +152,7 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		access_token := &http.Cookie{
-			Name:     "access_token",
+			Name:     "accessToken",
 			Value:    token.Access,
 			Path:     "/",
 			HttpOnly: true,
@@ -162,7 +161,7 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		refresh_token := &http.Cookie{
-			Name:  "refresh_token",
+			Name:  "refreshToken",
 			Value: token.Refresh,
 			// TODO:
 			// I can send this token only into some path like api/v1/refresh
@@ -177,16 +176,11 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.HasSuffix(route.Path, "logout") {
-		var token models.Tokens
-
-		if err := json.Unmarshal(requestData, &token); err != nil {
-			log.Println("tokens unmarshal failed")
-			http.Error(w, fmt.Sprintf("Decoding Error , %v", err), http.StatusInternalServerError)
-		}
+		acessToken := h.extractTokens(r)["accessToken"].(string)
 		rc := h.redis.Get()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		rc.Eval(ctx, h.config.Redis.AddScript, []string{token.Access}, []interface{}{5 * time.Minute})
+		rc.Eval(ctx, h.config.Redis.AddScript, []string{acessToken}, []interface{}{5 * time.Minute})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -245,7 +239,7 @@ func (h *Handler) matchPath(pattern, path string) bool {
 }
 
 // buildRequestData builds the gRPC request from HTTP request
-func (h *Handler) buildRequestData(r *http.Request, route *models.RouteConfig, body []byte) ([]byte, error) {
+func (h *Handler) buildRequestData(r *http.Request, route *models.RouteConfig, body []byte, userID string) ([]byte, error) {
 	var data map[string]interface{}
 
 	if len(body) > 0 {
@@ -261,6 +255,10 @@ func (h *Handler) buildRequestData(r *http.Request, route *models.RouteConfig, b
 	for key, value := range tokenParams {
 		data[key] = value
 	}
+
+	if userID != "" {
+		data["UserId"] = userID
+	}
 	// For patterns like /api/v1/posts/{postId}, this extracts "postId"
 	pathParams := h.extractPathParams(route.Path, r)
 	for key, value := range pathParams {
@@ -270,20 +268,29 @@ func (h *Handler) buildRequestData(r *http.Request, route *models.RouteConfig, b
 	// query parameters
 	for key, values := range r.URL.Query() {
 		if len(values) > 0 {
-			data[key] = values[0]
+			data[key] = values
 		}
 	}
-
+	for key := range data {
+		log.Println(key, "   ", data[key])
+	}
 	return json.Marshal(data)
 }
 
 func (h *Handler) extractTokens(r *http.Request) map[string]interface{} {
+
 	tokens := make(map[string]interface{})
-	token := r.Header.Get("refresh_token")
-	if token == "" {
-		return tokens
+	var token string
+	authHeader := r.Header.Get("Authorization")
+	if authHeader != "" {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
 	}
-	tokens["refresh_token"] = token
+
+	tokens["accessToken"] = token
+
+	token = r.Header.Get("refreshToken")
+	// log.Println("RefreshToken", token)
+	tokens["refreshToken"] = token
 	return tokens
 }
 
@@ -296,6 +303,7 @@ func (h *Handler) extractPathParams(pattern string, r *http.Request) map[string]
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
 			paramName := strings.TrimSuffix(strings.TrimPrefix(part, "{"), "}")
 			if value := r.PathValue(paramName); value != "" {
+				log.Println(paramName, "  ", value)
 				params[paramName] = value
 			}
 		}
@@ -305,21 +313,30 @@ func (h *Handler) extractPathParams(pattern string, r *http.Request) map[string]
 }
 
 func (h *Handler) checkAuth(w http.ResponseWriter, r *http.Request) (string, bool) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
+	authToken := h.extractTokens(r)["accessToken"].(string)
+	if authToken == "" {
+		log.Println("NO Authorization header found")
 		http.Error(w, "Authorization header required", http.StatusUnauthorized)
 		return "", false
 	}
-
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-
-	if len(token) == 0 {
-		http.Error(w, "Authorization token required", http.StatusUnauthorized)
+	// Add nil check for redis
+	if h.redis == nil {
+		log.Println("Redis pool is nil")
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return "", false
 	}
 
-	userID, err := ValidateToken(token, h.config.PublicKey, h.redis.Get(), h.config.Redis.CheckScript)
+	redisClient := h.redis.Get()
+	if redisClient == nil {
+		log.Println("Failed to get Redis client from pool")
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return "", false
+	}
+	defer h.redis.Put(redisClient)
+
+	userID, err := ValidateToken(authToken, h.config.PublicKey, redisClient, h.config.Redis.CheckScript)
 	if err != nil {
+		log.Printf("Token validation error: %v", err)
 		if err.Error() == "invalid" {
 			http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
 		} else {
