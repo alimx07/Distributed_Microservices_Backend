@@ -18,10 +18,11 @@ type ServerConfig struct {
 }
 
 type RateLimitingConfig struct {
-	RulesConfig string `yaml:"rules_config"`
-	ScriptPath  string `yaml:"script_path"`
-	Addr        string `yaml:"addr"`
-	PoolSize    int    `yaml:"pool_size"`
+	RulesConfig         string `yaml:"rules_config"`
+	ScriptPath          string `yaml:"script_path"`
+	Addr                string `yaml:"addr"`
+	RateLimiterPoolSize int    `yaml:"pool_size"`
+	RateLimitingScript  string
 }
 
 type ServiceConfig struct {
@@ -31,10 +32,12 @@ type ServiceConfig struct {
 }
 
 type RedisConfig struct {
-	RedisAddr   string `yaml:"redis_pool_size"`
-	AddScript   string `yaml:"redis_add_script"`
-	CheckScript string `yaml:"redis_check_script"`
-	PoolSize    int    `yaml:"redis_addr"`
+	RedisAddr       string `yaml:"redis_addr"`
+	AddScriptPath   string `yaml:"redis_add_script"`
+	CheckScriptPath string `yaml:"redis_check_script"`
+	RedisPoolSize   int    `yaml:"redis_pool_size"`
+	AddScript       string
+	CheckScript     string
 }
 
 type RouteConfig struct {
