@@ -7,7 +7,9 @@ server:
 rate_limiting:
   rules_config: "rate_rules.json"
   script_path: "redis_script.lua"
-  addr: "localhost:6379"
+  addrs: 
+    - localhost:6379
+    - localhost:6380
   pool_size: 10
 
 redis_config:

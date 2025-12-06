@@ -78,7 +78,7 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Apply rate limiting if enabled
 	if route.RateLimitEnabled {
-		allowed, err := h.rateLimiter.Allow(r)
+		allowed, err := h.rateLimiter.AllowIP(r)
 		if err != nil {
 			log.Printf("Rate limiter error: %v", err)
 			// Fail open
@@ -95,6 +95,14 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		userID, ok = h.checkAuth(w, r)
 		if !ok {
 			return // Auth middleware already wrote error
+		}
+		allowed, err := h.rateLimiter.AllowRules(r)
+		if err != nil {
+			log.Printf("Rate limiter error: %v", err)
+			// Fail open
+		} else if !allowed {
+			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+			return
 		}
 	}
 

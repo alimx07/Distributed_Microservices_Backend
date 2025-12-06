@@ -1,12 +1,10 @@
-[
-  {
-    "name": "IP",
+{
+  "IP" : {
     "limit": 1000,
     "refillRate": 10
   },
-  {
-    "name": "UserId",
+  "UserId" : {
     "limit": 100,
     "refillRate": 10
   }
-]
+}

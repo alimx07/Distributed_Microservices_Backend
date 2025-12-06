@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
@@ -113,6 +114,7 @@ func LoadAppConfig(filename string) (*models.AppConfig, error) {
 	}
 	if clusterAddr := os.Getenv("CLUSTER_ADDR"); clusterAddr != "" {
 		log.Println(clusterAddr)
+		clusterAddr := strings.Split(clusterAddr, ",")
 		config.RateLimiting.Addr = clusterAddr
 	}
 

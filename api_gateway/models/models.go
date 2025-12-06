@@ -18,10 +18,10 @@ type ServerConfig struct {
 }
 
 type RateLimitingConfig struct {
-	RulesConfig         string `yaml:"rules_config"`
-	ScriptPath          string `yaml:"script_path"`
-	Addr                string `yaml:"addr"`
-	RateLimiterPoolSize int    `yaml:"pool_size"`
+	RulesConfig         string   `yaml:"rules_config"`
+	ScriptPath          string   `yaml:"script_path"`
+	Addr                []string `yaml:"addrs"`
+	RateLimiterPoolSize int      `yaml:"pool_size"`
 	RateLimitingScript  string
 }
 
