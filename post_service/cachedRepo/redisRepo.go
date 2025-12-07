@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -17,19 +16,26 @@ import (
 
 type redisRepo struct {
 	presistanceDB postRepo.PersistenceDB
-	redisClient   *redis.Client
+	redisClient   *redis.ClusterClient
 	ctx           context.Context
 }
 
-func NewRedisRepo(repo postRepo.PersistenceDB, host, port, pass string) *redisRepo {
-	client := redis.NewClient(&redis.Options{
-		Addr:     net.JoinHostPort(host, port),
+func NewRedisRepo(repo postRepo.PersistenceDB, addrs []string, pass string) (*redisRepo, error) {
+	client := redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs:    addrs,
 		Password: pass,
 	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := client.Ping(ctx).Err(); err != nil {
+		log.Println("Error in Connection to redis Cluster: ", err)
+		return nil, err
+	}
 	return &redisRepo{
 		presistanceDB: repo,
 		redisClient:   client,
-	}
+	}, nil
 }
 
 func (rs *redisRepo) CachePost(ctx context.Context, post models.CachedPost) error {

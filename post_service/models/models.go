@@ -17,8 +17,7 @@ type Config struct {
 	DBReplicaName     string
 	DBReplicaPassword string
 
-	CacheHost      string
-	CachePort      string
+	CacheAddrs     []string
 	CachePassword  string
 	ServerHost     string
 	ServerPort     string

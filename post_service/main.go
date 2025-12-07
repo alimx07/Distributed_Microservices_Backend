@@ -21,7 +21,10 @@ func main() {
 	defer replicaDB.Close()
 
 	postRepo := postRepo.NewPostgresRepo(primaryDB, replicaDB)
-	cachedRepo := cachedRepo.NewRedisRepo(postRepo, config.CacheHost, config.CachePort, config.CachePassword)
+	cachedRepo, err := cachedRepo.NewRedisRepo(postRepo, config.CacheAddrs, config.CachePassword)
+	if err != nil {
+		log.Println("Error in Loading Redis Cluster: ", err.Error())
+	}
 	postService := NewPostService(postRepo, cachedRepo, config)
 	go func() {
 		log.Println(postService.StartHealthServer())

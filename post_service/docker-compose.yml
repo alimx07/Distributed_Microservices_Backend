@@ -32,8 +32,7 @@ services:
       - SERVER_HOST=0.0.0.0
       - SERVER_HTTP_PORT=8080
       - SERVER_PORT=50061
-      - CACHE_HOST=redis-node-1
-      - CACHE_PORT=6379
+      - CLUSTER_ADDR=redis-node-1:6379,redis-node-2:6379,redis-node-3:6379,redis-node-4:6379,redis-node-5:6379,redis-node-6:6379
     ports:
       - 50061:50061
     networks:

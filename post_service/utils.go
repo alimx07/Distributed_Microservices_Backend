@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/models"
 	_ "github.com/lib/pq"
@@ -30,8 +31,7 @@ func LoadConfig() (models.Config, error) {
 		ServerHost:     os.Getenv("SERVER_HOST"),
 		ServerHttpPort: os.Getenv("SERVER_HTTP_PORT"),
 		CachePassword:  os.Getenv("CACHE_PASSWORD"),
-		CacheHost:      os.Getenv("CACHE_HOST"),
-		CachePort:      os.Getenv("CACHE_PORT"),
+		CacheAddrs:     strings.Split(os.Getenv("CLUSTER_ADDR"), ","),
 	}
 	return config, nil
 }
