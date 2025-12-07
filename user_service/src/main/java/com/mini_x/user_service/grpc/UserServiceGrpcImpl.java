@@ -157,7 +157,7 @@ public class UserServiceGrpcImpl extends UserServiceGrpc.UserServiceImplBase {
     @Override
     public void getUsersData(GetUsersDataRequest request, StreamObserver<GetUsersDataResponse> responseObserver) {
         try {
-            List<String> userIds = request.getUseridList();
+            List<String> userIds = request.getUserIdList();
             Map<String, List<String>> userData = userService.getUsersData(userIds);
 
             
@@ -170,7 +170,7 @@ public class UserServiceGrpcImpl extends UserServiceGrpc.UserServiceImplBase {
                 responseBuilder.addAllUsername(usernames);
             }
             if (foundUserIds != null) {
-                responseBuilder.addAllUserID(foundUserIds);
+                responseBuilder.addAllUserId(foundUserIds);
             }
 
             responseObserver.onNext(responseBuilder.build());
