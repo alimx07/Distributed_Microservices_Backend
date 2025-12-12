@@ -23,7 +23,7 @@ const (
 
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Userid        string                 `protobuf:"bytes,1,opt,name=userid,proto3" json:"userid,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
 	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -60,9 +60,9 @@ func (*User) Descriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *User) GetUserid() string {
+func (x *User) GetUserId() string {
 	if x != nil {
-		return x.Userid
+		return x.UserId
 	}
 	return ""
 }
@@ -423,7 +423,7 @@ func (x *TokenResponse) GetRefreshToken() string {
 
 type GetUsersDataRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Userid        []string               `protobuf:"bytes,1,rep,name=userid,proto3" json:"userid,omitempty"`
+	UserId        []string               `protobuf:"bytes,1,rep,name=UserId,proto3" json:"UserId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -458,9 +458,9 @@ func (*GetUsersDataRequest) Descriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *GetUsersDataRequest) GetUserid() []string {
+func (x *GetUsersDataRequest) GetUserId() []string {
 	if x != nil {
-		return x.Userid
+		return x.UserId
 	}
 	return nil
 }
@@ -468,7 +468,7 @@ func (x *GetUsersDataRequest) GetUserid() []string {
 type GetUsersDataResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Username      []string               `protobuf:"bytes,1,rep,name=username,proto3" json:"username,omitempty"`
-	UserID        []string               `protobuf:"bytes,2,rep,name=userID,proto3" json:"userID,omitempty"` // other data can be added here
+	UserId        []string               `protobuf:"bytes,2,rep,name=UserId,proto3" json:"UserId,omitempty"` // other data can be added here
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -510,9 +510,9 @@ func (x *GetUsersDataResponse) GetUsername() []string {
 	return nil
 }
 
-func (x *GetUsersDataResponse) GetUserID() []string {
+func (x *GetUsersDataResponse) GetUserId() []string {
 	if x != nil {
-		return x.UserID
+		return x.UserId
 	}
 	return nil
 }
@@ -524,7 +524,7 @@ const file_user_proto_rawDesc = "" +
 	"\n" +
 	"user.proto\"P\n" +
 	"\x04User\x12\x16\n" +
-	"\x06userid\x18\x01 \x01(\tR\x06userid\x12\x1a\n" +
+	"\x06UserId\x18\x01 \x01(\tR\x06UserId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\"_\n" +
 	"\x0fRegisterRequest\x12\x1a\n" +
@@ -546,16 +546,16 @@ const file_user_proto_rawDesc = "" +
 	"\vaccessToken\x18\x01 \x01(\tR\vaccessToken\x12\"\n" +
 	"\frefreshToken\x18\x02 \x01(\tR\frefreshToken\"-\n" +
 	"\x13GetUsersDataRequest\x12\x16\n" +
-	"\x06userid\x18\x01 \x03(\tR\x06userid\"J\n" +
+	"\x06UserId\x18\x01 \x03(\tR\x06UserId\"J\n" +
 	"\x14GetUsersDataResponse\x12\x1a\n" +
 	"\busername\x18\x01 \x03(\tR\busername\x12\x16\n" +
-	"\x06userID\x18\x02 \x03(\tR\x06userID2\x81\x02\n" +
+	"\x06UserId\x18\x02 \x03(\tR\x06UserId2\x81\x02\n" +
 	"\vUserService\x12.\n" +
 	"\bRegister\x12\x10.RegisterRequest\x1a\x0e.TokenResponse\"\x00\x12(\n" +
 	"\x05Login\x12\r.LoginRequest\x1a\x0e.TokenResponse\"\x00\x12+\n" +
 	"\x06Logout\x12\x0e.LogoutRequest\x1a\x0f.LogoutResponse\"\x00\x12,\n" +
 	"\aRefresh\x12\x0f.RefreshRequest\x1a\x0e.TokenResponse\"\x00\x12=\n" +
-	"\fGetUsersData\x12\x14.GetUsersDataRequest\x1a\x15.GetUsersDataResponse\"\x00B\x19Z\x17../services_bindings_gob\x06proto3"
+	"\fGetUsersData\x12\x14.GetUsersDataRequest\x1a\x15.GetUsersDataResponse\"\x00B\x1cZ\x1a../../services_bindings_gob\x06proto3"
 
 var (
 	file_user_proto_rawDescOnce sync.Once

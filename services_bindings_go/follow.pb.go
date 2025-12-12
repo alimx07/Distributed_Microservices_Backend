@@ -23,7 +23,7 @@ const (
 
 type IsCelebReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserID        string                 `protobuf:"bytes,1,opt,name=UserID,proto3" json:"UserID,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -58,9 +58,9 @@ func (*IsCelebReq) Descriptor() ([]byte, []int) {
 	return file_follow_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *IsCelebReq) GetUserID() string {
+func (x *IsCelebReq) GetUserId() string {
 	if x != nil {
-		return x.UserID
+		return x.UserId
 	}
 	return ""
 }
@@ -111,7 +111,7 @@ func (x *IsCelebRes) GetIsCeleb() bool {
 
 type GetFollowersReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserID        string                 `protobuf:"bytes,1,opt,name=UserID,proto3" json:"UserID,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -146,9 +146,9 @@ func (*GetFollowersReq) Descriptor() ([]byte, []int) {
 	return file_follow_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetFollowersReq) GetUserID() string {
+func (x *GetFollowersReq) GetUserId() string {
 	if x != nil {
-		return x.UserID
+		return x.UserId
 	}
 	return ""
 }
@@ -204,12 +204,12 @@ const file_follow_proto_rawDesc = "" +
 	"\ffollow.proto\"$\n" +
 	"\n" +
 	"IsCelebReq\x12\x16\n" +
-	"\x06UserID\x18\x01 \x01(\tR\x06UserID\"&\n" +
+	"\x06UserId\x18\x01 \x01(\tR\x06UserId\"&\n" +
 	"\n" +
 	"IsCelebRes\x12\x18\n" +
 	"\aIsCeleb\x18\x01 \x01(\bR\aIsCeleb\")\n" +
 	"\x0fGetFollowersReq\x12\x16\n" +
-	"\x06UserID\x18\x01 \x01(\tR\x06UserID\"1\n" +
+	"\x06UserId\x18\x01 \x01(\tR\x06UserId\"1\n" +
 	"\x0fGetFollowersRes\x12\x1e\n" +
 	"\n" +
 	"FollowerID\x18\x01 \x03(\tR\n" +
@@ -217,7 +217,7 @@ const file_follow_proto_rawDesc = "" +
 	"\rFollowService\x122\n" +
 	"\fGetFollowers\x12\x10.GetFollowersReq\x1a\x10.GetFollowersRes\x12.\n" +
 	"\bGetCeleb\x12\x10.GetFollowersReq\x1a\x10.GetFollowersRes\x12#\n" +
-	"\aIsCeleb\x12\v.IsCelebReq\x1a\v.IsCelebResB\x19Z\x17../services_bindings_gob\x06proto3"
+	"\aIsCeleb\x12\v.IsCelebReq\x1a\v.IsCelebResB\x1cZ\x1a../../services_bindings_gob\x06proto3"
 
 var (
 	file_follow_proto_rawDescOnce sync.Once

@@ -535,7 +535,7 @@ const file_post_proto_rawDesc = "" +
 	"\rDeleteComment\x12\x15.DeleteCommentRequest\x1a\t.Response\"\x00\x12-\n" +
 	"\n" +
 	"DeleteLike\x12\x12.DeleteLikeRequest\x1a\t.Response\"\x00\x12/\n" +
-	"\bGetPosts\x12\x0f.GetPostRequest\x1a\x10.GetPostResponse\"\x00B\x19Z\x17../services_bindings_gob\x06proto3"
+	"\bGetPosts\x12\x0f.GetPostRequest\x1a\x10.GetPostResponse\"\x00B\x1cZ\x1a../../services_bindings_gob\x06proto3"
 
 var (
 	file_post_proto_rawDescOnce sync.Once

@@ -23,7 +23,7 @@ const (
 
 type GetFeedRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=UserId,proto3" json:"UserId,omitempty"`
 	Cursor        string                 `protobuf:"bytes,2,opt,name=cursor,proto3" json:"cursor,omitempty"`
 	PageSize      int32                  `protobuf:"varint,3,opt,name=pageSize,proto3" json:"pageSize,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -60,11 +60,11 @@ func (*GetFeedRequest) Descriptor() ([]byte, []int) {
 	return file_feed_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *GetFeedRequest) GetUserId() int64 {
+func (x *GetFeedRequest) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
-	return 0
+	return ""
 }
 
 func (x *GetFeedRequest) GetCursor() string {
@@ -135,11 +135,12 @@ func (x *GetFeedResponse) GetNextCursor() string {
 
 type FeedPost struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
-	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	CreatedAt     int64                  `protobuf:"varint,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LikesCount    int64                  `protobuf:"varint,4,opt,name=likes_count,json=likesCount,proto3" json:"likes_count,omitempty"`
-	CommentsCount int64                  `protobuf:"varint,5,opt,name=comments_count,json=commentsCount,proto3" json:"comments_count,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=UserId,proto3" json:"UserId,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LikesCount    int64                  `protobuf:"varint,5,opt,name=likes_count,json=likesCount,proto3" json:"likes_count,omitempty"`
+	CommentsCount int64                  `protobuf:"varint,6,opt,name=comments_count,json=commentsCount,proto3" json:"comments_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -172,6 +173,13 @@ func (x *FeedPost) ProtoReflect() protoreflect.Message {
 // Deprecated: Use FeedPost.ProtoReflect.Descriptor instead.
 func (*FeedPost) Descriptor() ([]byte, []int) {
 	return file_feed_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *FeedPost) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
 }
 
 func (x *FeedPost) GetUsername() string {
@@ -214,25 +222,26 @@ var File_feed_proto protoreflect.FileDescriptor
 const file_feed_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"feed.proto\"]\n" +
-	"\x0eGetFeedRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x16\n" +
+	"feed.proto\"\\\n" +
+	"\x0eGetFeedRequest\x12\x16\n" +
+	"\x06UserId\x18\x01 \x01(\tR\x06UserId\x12\x16\n" +
 	"\x06cursor\x18\x02 \x01(\tR\x06cursor\x12\x1a\n" +
 	"\bpageSize\x18\x03 \x01(\x05R\bpageSize\"S\n" +
 	"\x0fGetFeedResponse\x12\x1f\n" +
 	"\x05posts\x18\x01 \x03(\v2\t.FeedPostR\x05posts\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\"\xa7\x01\n" +
-	"\bFeedPost\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1d\n" +
+	"nextCursor\"\xbf\x01\n" +
+	"\bFeedPost\x12\x16\n" +
+	"\x06UserId\x18\x01 \x01(\tR\x06UserId\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x18\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x03 \x01(\x03R\tcreatedAt\x12\x1f\n" +
-	"\vlikes_count\x18\x04 \x01(\x03R\n" +
+	"created_at\x18\x04 \x01(\x03R\tcreatedAt\x12\x1f\n" +
+	"\vlikes_count\x18\x05 \x01(\x03R\n" +
 	"likesCount\x12%\n" +
-	"\x0ecomments_count\x18\x05 \x01(\x03R\rcommentsCount2;\n" +
+	"\x0ecomments_count\x18\x06 \x01(\x03R\rcommentsCount2;\n" +
 	"\vFeedService\x12,\n" +
-	"\aGetFeed\x12\x0f.GetFeedRequest\x1a\x10.GetFeedResponseB\x19Z\x17../services_bindings_gob\x06proto3"
+	"\aGetFeed\x12\x0f.GetFeedRequest\x1a\x10.GetFeedResponseB\x1cZ\x1a../../services_bindings_gob\x06proto3"
 
 var (
 	file_feed_proto_rawDescOnce sync.Once
