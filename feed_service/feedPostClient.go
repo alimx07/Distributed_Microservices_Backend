@@ -7,6 +7,7 @@ import (
 	"github.com/alimx07/Distributed_Microservices_Backend/feed_service/models"
 	pb "github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type PostClient struct {
@@ -15,7 +16,7 @@ type PostClient struct {
 }
 
 func NewPostClient(target string) (*PostClient, error) {
-	conn, err := grpc.NewClient(target)
+	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Error in Connection to Post Service: ", err.Error())
 		return nil, err
@@ -27,8 +28,8 @@ func NewPostClient(target string) (*PostClient, error) {
 	}, nil
 }
 
-func (pc *PostClient) GetPosts(ctx context.Context, items []models.FeedItem) ([]*pb.FeedPost, []int32, error) {
-	var ids []int64
+func (pc *PostClient) GetPosts(ctx context.Context, items []models.FeedItem) ([]*pb.FeedPost, []string, error) {
+	var ids []string
 	for _, item := range items {
 		ids = append(ids, item.PostId)
 	}
@@ -38,11 +39,13 @@ func (pc *PostClient) GetPosts(ctx context.Context, items []models.FeedItem) ([]
 	res, err := pc.client.GetPosts(ctx, req)
 	if err != nil {
 		log.Println("Error in Fetching posts: ", err.Error())
+		return nil, nil, err
 	}
 	posts := make([]*pb.FeedPost, 0, len(res.Post))
-	usersID := make([]int32, 0, len(res.Post))
+	usersID := make([]string, 0, len(res.Post))
 	for _, pbPost := range res.Post {
 		posts = append(posts, &pb.FeedPost{
+			UserId:        pbPost.UserId,
 			Content:       pbPost.Content,
 			CreatedAt:     pbPost.CreatedAt,
 			LikesCount:    pbPost.LikesCount,

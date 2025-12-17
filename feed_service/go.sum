@@ -18,6 +18,8 @@ github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0
 github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0-20251006180721-8b3949c765b9/go.mod h1:+d9v8lx1FJPRwea/0CucgTCuHTd+CfLmoz/+dblHQv4=
 github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0-20251006182137-355242d158e6 h1:pnVttJM+L8GP6hs+EjFhg54NyG8TzKhQZ3Ruu+5crrk=
 github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0-20251006182137-355242d158e6/go.mod h1:+d9v8lx1FJPRwea/0CucgTCuHTd+CfLmoz/+dblHQv4=
+github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0-20251212195745-1e4cf2097d99 h1:kRXbKC9q+JxyGX91LZIcajPBXCnz/K5Oq1eDLiuXpXU=
+github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0-20251212195745-1e4cf2097d99/go.mod h1:+d9v8lx1FJPRwea/0CucgTCuHTd+CfLmoz/+dblHQv4=
 github.com/aws/aws-sdk-go-v2 v1.26.1 h1:5554eUqIYVWpU0YmeeYZ0wU64H2VLBs8TlhRB2L+EkA=
 github.com/aws/aws-sdk-go-v2 v1.26.1/go.mod h1:ffIFB97e2yNsv4aTSGkqtHnppsIJzw7G7BReUZ3jCXM=
 github.com/aws/aws-sdk-go-v2/config v1.27.10 h1:PS+65jThT0T/snC5WjyfHHyUgG+eBoupSDV+f838cro=

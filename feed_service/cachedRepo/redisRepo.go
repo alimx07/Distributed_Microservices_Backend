@@ -2,7 +2,6 @@ package cachedrepo
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math"
 	"strconv"
@@ -12,20 +11,23 @@ import (
 )
 
 type redisRepo struct {
-	r   *redis.Client
+	r   *redis.ClusterClient
 	ctx context.Context
 }
 
-func NewRedisRepo(ctx context.Context, config models.RedisConfig) *redisRepo {
-	r := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%v:%v", config.Addr, config.Port),
+func NewRedisRepo(ctx context.Context, config models.RedisConfig) (*redisRepo, error) {
+	r := redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs:    config.ClusterAddr,
 		Password: config.Password,
 	})
 
+	if err := r.Ping(ctx).Err(); err != nil {
+		return nil, err
+	}
 	return &redisRepo{
 		r:   r,
 		ctx: ctx,
-	}
+	}, nil
 }
 
 // There is two types of data in caches:
@@ -41,8 +43,7 @@ func (rs *redisRepo) Set(f models.FeedItem) error {
 		Score:  float64(f.Created_at),
 		Member: f.PostId,
 	}
-	user_id := strconv.FormatInt(f.UserId, 10)
-	err := rs.r.ZAdd(rs.ctx, user_id, member).Err()
+	err := rs.r.ZAdd(rs.ctx, f.UserId, member).Err()
 	if err != nil {
 		log.Printf("Error in Inserting {%v} for user{%v}\n", f.PostId, f.UserId)
 		return err
@@ -51,13 +52,14 @@ func (rs *redisRepo) Set(f models.FeedItem) error {
 }
 
 func (rs *redisRepo) Get(c models.Cursor) ([]models.FeedItem, string, error) {
-	user_id := strconv.FormatInt(c.UserId, 10)
 	opt := redis.ZRangeArgs{
-		Key:    user_id,
-		Start:  c.Cursor,
-		Stop:   "+inf",
-		Offset: 0,
-		Count:  int64(c.PageSize),
+		Key:     c.UserId,
+		Start:   c.Cursor,
+		Stop:    "+inf",
+		Offset:  0,
+		Count:   int64(c.PageSize),
+		ByScore: true,
+		Rev:     true,
 	}
 	res, err := rs.r.ZRangeArgsWithScores(rs.ctx, opt).Result()
 	if err != nil {
@@ -65,19 +67,14 @@ func (rs *redisRepo) Get(c models.Cursor) ([]models.FeedItem, string, error) {
 		return nil, "", err
 	}
 	items := make([]models.FeedItem, 0, c.PageSize)
-	score := strconv.FormatInt(int64(res[0].Score), 10)
+	score := strconv.FormatInt(int64(math.MaxInt64), 10)
 	if len(res) > 0 {
-		score = strconv.FormatInt(int64(math.MaxInt64), 10)
+		score = strconv.FormatInt(int64(res[len(res)-1].Score), 10)
 	}
 	for _, val := range res {
-		post_id_str, ok := val.Member.(string)
+		post_id, ok := val.Member.(string)
 		if !ok {
 			log.Printf("Failed to assert member to string: %v", val.Member)
-			continue
-		}
-		post_id, err := strconv.ParseInt(post_id_str, 10, 64)
-		if err != nil {
-			log.Printf("Failed to parse post_id: %v", err)
 			continue
 		}
 		item := models.FeedItem{
@@ -87,4 +84,8 @@ func (rs *redisRepo) Get(c models.Cursor) ([]models.FeedItem, string, error) {
 		items = append(items, item)
 	}
 	return items, score, nil
+}
+
+func (rs *redisRepo) Close() error {
+	return rs.r.Close()
 }

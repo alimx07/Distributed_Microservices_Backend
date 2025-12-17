@@ -6,6 +6,7 @@ import (
 
 	pb "github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type FollowClient struct {
@@ -14,7 +15,7 @@ type FollowClient struct {
 }
 
 func NewFollowClient(target string) (*FollowClient, error) {
-	conn, err := grpc.NewClient(target)
+	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Error in Connection to Follow Service: ", err.Error())
 		return nil, err
@@ -27,37 +28,37 @@ func NewFollowClient(target string) (*FollowClient, error) {
 	}, nil
 }
 
-func (fc *FollowClient) GetFollowers(ctx context.Context, id int64) ([]int64, error) {
+func (fc *FollowClient) GetFollowers(ctx context.Context, id string) ([]string, error) {
 	req := &pb.GetFollowersReq{
-		UserID: id,
+		UserId: id,
 	}
 	res, err := fc.client.GetFollowers(ctx, req)
 	if err != nil {
-		log.Printf("Error in Fetching Follower IDs for user: %v , Err: ", id, err.Error())
+		log.Printf("Error in Fetching Follower IDs for user: %v , Err: %v", id, err.Error())
 		return nil, err
 	}
 	return res.FollowerID, nil
 }
 
-func (fc *FollowClient) IsCeleb(ctx context.Context, id int64) (bool, error) {
+func (fc *FollowClient) IsCeleb(ctx context.Context, id string) (bool, error) {
 	req := &pb.IsCelebReq{
-		UserID: id,
+		UserId: id,
 	}
 	res, err := fc.client.IsCeleb(ctx, req)
 	if err != nil {
-		log.Printf("Error in Fetching Follower IDs for user: %v , Err: ", id, err.Error())
+		log.Printf("Error in Fetching Follower IDs for user: %v , Err: %v", id, err.Error())
 		return false, err
 	}
 	return res.IsCeleb, nil
 }
 
-func (fc *FollowClient) GetCeleb(ctx context.Context, id int64) ([]int64, error) {
+func (fc *FollowClient) GetCeleb(ctx context.Context, id string) ([]string, error) {
 	req := &pb.GetFollowersReq{
-		UserID: id,
+		UserId: id,
 	}
 	res, err := fc.client.GetFollowers(ctx, req)
 	if err != nil {
-		log.Printf("Error in Fetching Follower IDs for user: %v , Err: ", id, err.Error())
+		log.Printf("Error in Fetching Follower IDs for user: %v , Err: %v", id, err.Error())
 		return nil, err
 	}
 	return res.FollowerID, nil

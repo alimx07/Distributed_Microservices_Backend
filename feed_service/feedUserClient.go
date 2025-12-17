@@ -6,6 +6,7 @@ import (
 
 	pb "github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type UserClient struct {
@@ -14,7 +15,7 @@ type UserClient struct {
 }
 
 func NewUserClient(target string) (*UserClient, error) {
-	conn, err := grpc.NewClient(target)
+	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Error in Connection to User Service: ", err.Error())
 		return nil, err
@@ -26,16 +27,16 @@ func NewUserClient(target string) (*UserClient, error) {
 	}, nil
 }
 
-func (uc *UserClient) GetUsersData(ctx context.Context, ids []int32) (map[int32]string, error) {
-	req := &pb.GetUsersDataRequest{Userid: ids}
+func (uc *UserClient) GetUsersData(ctx context.Context, ids []string) (map[string]string, error) {
+	req := &pb.GetUsersDataRequest{UserId: ids}
 	res, err := uc.client.GetUsersData(ctx, req)
 	if err != nil {
 		log.Println("Failed to get userData from Users Service:", err.Error())
 		return nil, err
 	}
-	users := make(map[int32]string)
-	for i := range len(res.UserID) {
-		users[res.UserID[i]] = res.Username[i]
+	users := make(map[string]string)
+	for i := range len(res.UserId) {
+		users[res.UserId[i]] = res.Username[i]
 	}
 	return users, nil
 }

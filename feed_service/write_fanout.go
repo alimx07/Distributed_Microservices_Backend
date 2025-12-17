@@ -20,6 +20,7 @@ type FanoutWriter struct {
 	ctx             context.Context
 	cache           cachedrepo.Cache
 	followClient    *FollowClient
+	wg              *sync.WaitGroup
 	workerThreshold int
 }
 
@@ -54,11 +55,12 @@ func NewFanoutWriter(ctx context.Context, config models.KafkaConfig, cache cache
 		cache:           cache,
 		followClient:    fc,
 		workerThreshold: workerThreshold,
+		wg:              &sync.WaitGroup{},
 	}, nil
 
 }
 
-func (fw *FanoutWriter) WriteFanout(ctx context.Context) {
+func (fw *FanoutWriter) WriteFanout() {
 
 	for {
 		select {
@@ -68,7 +70,9 @@ func (fw *FanoutWriter) WriteFanout(ctx context.Context) {
 			ev := fw.c.Poll(100)
 			switch e := ev.(type) {
 			case *kafka.Message:
+				fw.wg.Add(1)
 				go func() {
+					defer fw.wg.Done()
 					err := fw.ProcessMessage(e)
 					if err != nil {
 						log.Println("Error Processing Message", err.Error())
@@ -91,14 +95,15 @@ func (fw *FanoutWriter) ProcessMessage(msg *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	ctx, c1 := context.WithTimeout(context.Background(), 5*time.Second)
+	log.Println("POSTID --> ", item.PostId)
+	ctx, c1 := context.WithTimeout(fw.ctx, 5*time.Second)
 	defer c1()
 	celeb, _ := fw.followClient.IsCeleb(ctx, item.UserId)
 	if celeb {
 		fw.cache.Set(item)
 		return nil
 	}
-	ctx2, c2 := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx2, c2 := context.WithTimeout(fw.ctx, 5*time.Second)
 	defer c2()
 	followers, err := fw.followClient.GetFollowers(ctx2, item.UserId)
 	if err != nil {
@@ -108,7 +113,7 @@ func (fw *FanoutWriter) ProcessMessage(msg *kafka.Message) error {
 	i := 0
 	for {
 		wg.Add(1)
-		go func(ids []int64) {
+		go func(ids []string) {
 			defer wg.Done()
 			for _, id := range ids {
 				fw.cache.Set(models.FeedItem{
@@ -125,4 +130,10 @@ func (fw *FanoutWriter) ProcessMessage(msg *kafka.Message) error {
 	}
 	wg.Wait()
 	return nil
+}
+
+func (fw *FanoutWriter) close() error {
+	// wait until all goroutines end
+	fw.wg.Wait()
+	return fw.c.Close()
 }
