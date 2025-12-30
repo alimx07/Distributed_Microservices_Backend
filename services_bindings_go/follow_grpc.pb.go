@@ -22,6 +22,8 @@ const (
 	FollowService_GetFollowers_FullMethodName = "/FollowService/GetFollowers"
 	FollowService_GetCeleb_FullMethodName     = "/FollowService/GetCeleb"
 	FollowService_IsCeleb_FullMethodName      = "/FollowService/IsCeleb"
+	FollowService_CreateFollow_FullMethodName = "/FollowService/CreateFollow"
+	FollowService_DeleteFollow_FullMethodName = "/FollowService/DeleteFollow"
 )
 
 // FollowServiceClient is the client API for FollowService service.
@@ -31,6 +33,8 @@ type FollowServiceClient interface {
 	GetFollowers(ctx context.Context, in *GetFollowersReq, opts ...grpc.CallOption) (*GetFollowersRes, error)
 	GetCeleb(ctx context.Context, in *GetFollowersReq, opts ...grpc.CallOption) (*GetFollowersRes, error)
 	IsCeleb(ctx context.Context, in *IsCelebReq, opts ...grpc.CallOption) (*IsCelebRes, error)
+	CreateFollow(ctx context.Context, in *CreateFollowReq, opts ...grpc.CallOption) (*FollowResponse, error)
+	DeleteFollow(ctx context.Context, in *DeleteFollowReq, opts ...grpc.CallOption) (*FollowResponse, error)
 }
 
 type followServiceClient struct {
@@ -71,6 +75,26 @@ func (c *followServiceClient) IsCeleb(ctx context.Context, in *IsCelebReq, opts 
 	return out, nil
 }
 
+func (c *followServiceClient) CreateFollow(ctx context.Context, in *CreateFollowReq, opts ...grpc.CallOption) (*FollowResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FollowResponse)
+	err := c.cc.Invoke(ctx, FollowService_CreateFollow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *followServiceClient) DeleteFollow(ctx context.Context, in *DeleteFollowReq, opts ...grpc.CallOption) (*FollowResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FollowResponse)
+	err := c.cc.Invoke(ctx, FollowService_DeleteFollow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FollowServiceServer is the server API for FollowService service.
 // All implementations must embed UnimplementedFollowServiceServer
 // for forward compatibility.
@@ -78,6 +102,8 @@ type FollowServiceServer interface {
 	GetFollowers(context.Context, *GetFollowersReq) (*GetFollowersRes, error)
 	GetCeleb(context.Context, *GetFollowersReq) (*GetFollowersRes, error)
 	IsCeleb(context.Context, *IsCelebReq) (*IsCelebRes, error)
+	CreateFollow(context.Context, *CreateFollowReq) (*FollowResponse, error)
+	DeleteFollow(context.Context, *DeleteFollowReq) (*FollowResponse, error)
 	mustEmbedUnimplementedFollowServiceServer()
 }
 
@@ -96,6 +122,12 @@ func (UnimplementedFollowServiceServer) GetCeleb(context.Context, *GetFollowersR
 }
 func (UnimplementedFollowServiceServer) IsCeleb(context.Context, *IsCelebReq) (*IsCelebRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsCeleb not implemented")
+}
+func (UnimplementedFollowServiceServer) CreateFollow(context.Context, *CreateFollowReq) (*FollowResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateFollow not implemented")
+}
+func (UnimplementedFollowServiceServer) DeleteFollow(context.Context, *DeleteFollowReq) (*FollowResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteFollow not implemented")
 }
 func (UnimplementedFollowServiceServer) mustEmbedUnimplementedFollowServiceServer() {}
 func (UnimplementedFollowServiceServer) testEmbeddedByValue()                       {}
@@ -172,6 +204,42 @@ func _FollowService_IsCeleb_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FollowService_CreateFollow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateFollowReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FollowServiceServer).CreateFollow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FollowService_CreateFollow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FollowServiceServer).CreateFollow(ctx, req.(*CreateFollowReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FollowService_DeleteFollow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteFollowReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FollowServiceServer).DeleteFollow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FollowService_DeleteFollow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FollowServiceServer).DeleteFollow(ctx, req.(*DeleteFollowReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FollowService_ServiceDesc is the grpc.ServiceDesc for FollowService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +258,14 @@ var FollowService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsCeleb",
 			Handler:    _FollowService_IsCeleb_Handler,
+		},
+		{
+			MethodName: "CreateFollow",
+			Handler:    _FollowService_CreateFollow_Handler,
+		},
+		{
+			MethodName: "DeleteFollow",
+			Handler:    _FollowService_DeleteFollow_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
