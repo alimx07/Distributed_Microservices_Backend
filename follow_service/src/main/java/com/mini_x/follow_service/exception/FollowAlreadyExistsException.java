@@ -3,7 +3,7 @@ package com.mini_x.follow_service.exception;
 
 
 public class FollowAlreadyExistsException extends RuntimeException{
-    public FollowAlreadyExistsException(Long followerId , Long followeeId) {
-        super(String.format("User %d already follows User %d" , followerId , followeeId));
+    public FollowAlreadyExistsException(String followerId , String followeeId) {
+        super(String.format("User %s already follows User %s" , followerId , followeeId));
     }
 }

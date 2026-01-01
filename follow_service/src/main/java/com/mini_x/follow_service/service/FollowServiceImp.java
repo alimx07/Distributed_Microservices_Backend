@@ -25,7 +25,7 @@ public class FollowServiceImp implements FollowService {
     private final WriteRepo writeRepo;
     private final ReadRepo readRepo;
 
-    private static final long Threshold = 10000;
+    private static final long THRESHOLD = 10000;
 
 
     // Components will be ingected by spring boot
@@ -38,28 +38,28 @@ public class FollowServiceImp implements FollowService {
 
     @Override
     @Transactional(value = "secondaryTransactionManager", readOnly = true)
-    public List<Long> getFollowers(Long userId) {
-        List<Long> followers = this.readRepo.findFolloweesByFollowerId(userId);
+    public List<String> getFollowers(String userId) {
+        List<String> followers = this.readRepo.findFolloweesByFollowerId(userId);
         return followers;
     }
     @Override
     @Transactional(value = "secondaryTransactionManager", readOnly = true)
-    public List<Long> getFollowing(Long userId) {
-        List<Long> following = this.readRepo.findFollowersByFolloweeId(userId);
+    public List<String> getFollowing(String userId) {
+        List<String> following = this.readRepo.findFollowersByFolloweeId(userId);
         return following;
     }
 
     @Override
     @Transactional(value = "secondaryTransactionManager", readOnly = true)
-    public boolean isCeleb(Long userId) {
+    public boolean isCeleb(String userId) {
         long celeb = this.readRepo.countFollowersByFolloweeId(userId);
-        return (celeb > Threshold);
+        return (celeb > THRESHOLD);
     }
 
 
     @Override
     @Transactional("primaryTransactionManager")
-    public void createFollow(Long followerId, Long followeeId) {
+    public void createFollow(String followerId, String followeeId) {
         if (followerId == null) {
             throw new InvalidInputException("FollowerID can not be Null");
         }
@@ -79,15 +79,15 @@ public class FollowServiceImp implements FollowService {
 
     @Override
     @Transactional("primaryTransactionManager")
-    public void deleteFollow(Long followerId , Long followeeId) {
+    public void deleteFollow(String followerId , String followeeId) {
         if (followerId == null) {
             throw new InvalidInputException("FollowerID can not be Null");
         }
         if (followeeId == null) {
             throw new InvalidInputException("FolloweeID can not be Null");
         }
-        if (!followerId.equals(followeeId)) {
-            throw new InvalidInputException("User can not follow himself");
+        if (followerId.equals(followeeId)) {
+            throw new InvalidInputException("User can not unfollow himself");
         }
         if (!isFollowing(followerId , followeeId)) {
             throw new FollowNotFoundException(followerId , followeeId);
@@ -97,9 +97,9 @@ public class FollowServiceImp implements FollowService {
     }
 
     @Transactional(value = "secondaryTransactionManager", readOnly = true)
-    private boolean isFollowing(Long followerID , Long followeeID) {
+    private boolean isFollowing(String followerID , String followeeID) {
         
         FollowID id = new FollowID(followerID , followeeID);
-        return this.writeRepo.existsById(id);
+        return this.readRepo.existsById(id);
     }
 }

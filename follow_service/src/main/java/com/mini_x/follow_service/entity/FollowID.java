@@ -4,12 +4,12 @@ import java.io.Serializable;
 import java.util.Objects;
 public class FollowID implements Serializable {
 
-    private long followerID;
-    private long followeeID; 
+    private String followerID;
+    private String followeeID; 
 
     public FollowID() {}
     
-    public FollowID(long followerID , long followeeID) {
+    public FollowID(String followerID , String followeeID) {
         this.followerID = followerID;
         this.followeeID = followeeID;
     }
@@ -27,19 +27,19 @@ public class FollowID implements Serializable {
         return Objects.hash(followerID, followeeID);
     }
 
-    public long getFollowerID(){
+    public String getFollowerID(){
         return followerID;
     }
 
-    public void setFollowerID(long x) {
+    public void setFollowerID(String x) {
         this.followerID = x;
     }
 
-    public long getFolloweeID(){
+    public String getFolloweeID(){
         return followeeID;
     }
 
-    public void setFolloweeID(long x) {
+    public void setFolloweeID(String x) {
         this.followeeID = x;
     }
     

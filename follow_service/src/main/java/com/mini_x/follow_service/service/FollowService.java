@@ -7,14 +7,14 @@ import java.util.List;
 
 public interface FollowService {
 
-    List<Long> getFollowers(Long userId);
+    List<String> getFollowers(String userId);
 
-    List<Long> getFollowing(Long userId);
+    List<String> getFollowing(String userId);
 
-    boolean isCeleb(Long userId);
+    boolean isCeleb(String userId);
 
-    void createFollow(Long followerId , Long FolloweeId);
+    void createFollow(String followerId , String FolloweeId);
 
-    void deleteFollow(Long followerId , Long FolloweeId);
+    void deleteFollow(String followerId , String FolloweeId);
     
 }

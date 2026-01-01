@@ -18,12 +18,12 @@ public interface ReadRepo extends  JpaRepository<Follow, FollowID>{
 
 
     @Query("SELECT f.followerID FROM Follow f WHERE f.followeeID = :userId")
-    List<Long> findFollowersByFolloweeId(@Param("userId") Long userId);
+    List<String> findFollowersByFolloweeId(@Param("userId") String userId);
     
 
     @Query("SELECT f.followeeID FROM Follow f WHERE f.followerID = :userId")
-    List<Long> findFolloweesByFollowerId(@Param("userId") Long userId);
+    List<String> findFolloweesByFollowerId(@Param("userId") String userId);
     
     @Query("SELECT COUNT(f) FROM Follow f WHERE f.followeeID = :userId")
-    long countFollowersByFolloweeId(@Param("userId") Long userId);
+    long countFollowersByFolloweeId(@Param("userId") String userId);
 }

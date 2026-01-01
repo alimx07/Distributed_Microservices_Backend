@@ -15,17 +15,21 @@ import jakarta.persistence.Table;
 public class Follow {
 
     @Id
-    private Long followerID;
+    @Column(name = "follower_id", nullable = false, length = 26)
+    private String followerID;
 
     @Id
-    private Long followeeID;
+    @Column(name = "followee_id", nullable = false, length = 26)
+    private String followeeID;
 
 
     @Column(name = "created_at" , nullable=false , updatable=false)
     private LocalDateTime createdAt;
 
+   
+    public Follow() {}
 
-    public Follow(long followerID , long followeeID) {
+    public Follow(String followerID , String followeeID) {
         this.followerID = followerID;
         this.followeeID = followeeID;
     }
@@ -35,20 +39,20 @@ public class Follow {
         this.createdAt = LocalDateTime.now();
     }
 
-    public Long getFollowerId() {
+    public String getFollowerID() {
         return followerID;
     }
     
-    public void setFollowerID(Long followerId) {
-        this.followerID = followerId;
+    public void setFollowerID(String followerID) {
+        this.followerID = followerID;
     }
     
-    public Long getFolloweeID() {
+    public String getFolloweeID() {
         return followeeID;
     }
     
-    public void setFolloweeID(Long followingId) {
-        this.followeeID = followingId;
+    public void setFolloweeID(String followeeID) {
+        this.followeeID = followeeID;
     }
     
     public LocalDateTime getCreatedAt() {
