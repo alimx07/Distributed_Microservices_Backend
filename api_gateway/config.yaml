@@ -10,7 +10,7 @@ rate_limiting:
   addrs: 
     - localhost:6379
     - localhost:6380
-  pool_size: 10
+  pool_size: 3  # pool size per node
 
 redis_config:
   redis_addr: "localhost:7000"
@@ -36,8 +36,7 @@ services:
   
   follow_service:
     instances:
-      - "follow_service:50071"
-      - "follow_service:50072"
+      - "follow-service:50071"
     health_check_interval: 5s
     protoset_path: "_proto/follow.protoset"
   
@@ -161,6 +160,22 @@ routes:
     service: "follow_service"
     grpc_service: "FollowService"
     grpc_method: "GetCeleb"
+    require_auth: true
+    rate_limit_enabled: true
+
+  - path: "/api/v1/follow/{FolloweeId}"
+    method: "POST"
+    service: "follow_service"
+    grpc_service: "FollowService"
+    grpc_method: "CreateFollow"
+    require_auth: true
+    rate_limit_enabled: true
+
+  - path: "/api/v1/follow/{FolloweeId}"
+    method: "DELETE"
+    service: "follow_service"
+    grpc_service: "FollowService"
+    grpc_method: "DeleteFollow"
     require_auth: true
     rate_limit_enabled: true
     
