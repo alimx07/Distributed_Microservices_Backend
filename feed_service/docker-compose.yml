@@ -17,9 +17,12 @@ services:
       context: .
       dockerfile: Dockerfile
     image: feed_service:1.0.0
+    container_name: feed_service
+    depends_on:
+      - redis-cluster-creator
     environment:
       - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=50051
+      - SERVER_PORT=50081
       - SERVER_HTTP_PORT=8080
       - CLUSTER_ADDR=redis-node-1:6379,redis-node-2:6379,redis-node-3:6379,redis-node-4:6379,redis-node-5:6379,redis-node-6:6379
       - CACHE_PASSWORD=mypassword
@@ -28,8 +31,11 @@ services:
       - OFFSET_RESET=latest
       - FETCH_MIN_BYTES=1
       - TOPICS=post_service.public.posts
+      - POST_SERVICE=post_service:50061
+      - USER_SERVICE=user-service1:50051
+      - FOLLOW_SERVICE=follow-service:50071
     ports:
-      - 50054:50051
+      - 50081:50081
     volumes:
       - redis_data:/bitnami/redis/data
     networks:

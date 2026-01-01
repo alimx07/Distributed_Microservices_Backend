@@ -122,7 +122,7 @@ func (fw *FanoutWriter) ProcessMessage(msg *kafka.Message) error {
 					Created_at: item.Created_at,
 				})
 			}
-		}(followers[i*fw.workerThreshold : (i+1)*fw.workerThreshold])
+		}(followers[i*fw.workerThreshold : min((i+1)*fw.workerThreshold, len(followers))])
 		i += fw.workerThreshold
 		if i > len(followers) {
 			break

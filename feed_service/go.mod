@@ -3,9 +3,8 @@ module github.com/alimx07/Distributed_Microservices_Backend/feed_service
 go 1.25.0
 
 require (
-	github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0-20251212195745-1e4cf2097d99
+	github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go v0.0.0-20251230141841-0c5ae39f3afd
 	github.com/confluentinc/confluent-kafka-go/v2 v2.11.1
-	github.com/joho/godotenv v1.5.1
 	github.com/redis/go-redis/v9 v9.14.0
 	google.golang.org/grpc v1.75.0
 )

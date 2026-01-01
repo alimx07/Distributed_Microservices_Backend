@@ -69,6 +69,7 @@ func NewFeedService(config models.ServerConfig, Kconfig models.KafkaConfig, cach
 		fs.closeResources()
 		log.Fatal("Error in Connecting to cache: ", err.Error())
 	}
+	fs.cache = cache
 	fw, err := NewFanoutWriter(ctx, Kconfig, cache, fc, 100)
 	if err != nil {
 		fs.closeClients()
@@ -113,6 +114,7 @@ func (fs *FeedService) GetFeed(ctx context.Context, req *pb.GetFeedRequest) (*pb
 	// items := make([]models.FeedItem, 0, c.PageSize*2)
 
 	// First Get precomputed UserFeed Posts
+	log.Println(fs == nil, fs.cache == nil)
 	items, curr_score, err := fs.cache.Get(c)
 	if err != nil {
 		log.Println("Error in Getting UserFeed Cache Items:", err.Error())
@@ -122,7 +124,10 @@ func (fs *FeedService) GetFeed(ctx context.Context, req *pb.GetFeedRequest) (*pb
 	defer c1()
 
 	// Second Get Most Recents posts in celebs caches
-	celebs, _ := fs.followClient.GetCeleb(timeoutCtx, c.UserId)
+	var celebs []string
+	if fs.followClient != nil {
+		celebs, _ = fs.followClient.GetCeleb(timeoutCtx, c.UserId)
+	}
 
 	// we assign a new cursor while we go in the loop to avoid
 	// fetching unnecessary old data

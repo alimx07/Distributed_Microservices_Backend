@@ -10,14 +10,24 @@ import (
 )
 
 func ValidateCursorData(c string, pageSize int32) (string, int32) {
-	decode, err := base64.StdEncoding.DecodeString(c)
-	if err != nil || len(decode) == 0 {
-		log.Println("invalid Cursor", err.Error())
-		// continue with null cursor
+	// Empty cursor is valid - it means first page
+	if c == "" {
 		c = "-inf"
+	} else {
+		decode, err := base64.StdEncoding.DecodeString(c)
+		if err != nil {
+			log.Println("invalid Cursor:", err.Error())
+			// continue with null cursor
+			c = "-inf"
+		} else if len(decode) == 0 {
+			log.Println("invalid Cursor: empty cursor data after decode")
+			// continue with null cursor
+			c = "-inf"
+		} else {
+			c = string(decode)
+		}
 	}
-	c = string(decode)
-	if pageSize < 0 {
+	if pageSize <= 0 {
 		log.Println("invalid PageSize")
 		pageSize = 50 // default Value
 	}

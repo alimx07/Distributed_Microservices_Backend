@@ -45,7 +45,7 @@ func (rs *redisRepo) Set(f models.FeedItem) error {
 	}
 	err := rs.r.ZAdd(rs.ctx, f.UserId, member).Err()
 	if err != nil {
-		log.Printf("Error in Inserting {%v} for user{%v}\n", f.PostId, f.UserId)
+		log.Printf("Error in Inserting {%v} for user{%v}--> %v\n", f.PostId, f.UserId, err.Error())
 		return err
 	}
 	return nil
