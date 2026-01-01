@@ -118,7 +118,7 @@ func (rs *redisRepo) GetPosts(ctx context.Context, ids []string) ([]models.Post,
 		// store it in map , go to db once get all couters
 		// and map counters back to thier posts
 		if err != nil || len(cnt) == 0 {
-			log.Printf("Cache miss for counters of post:%v\n", err.Error())
+			log.Printf("Cache miss for counters of post:%v\n", err)
 			missedCounter = append(missedCounter, p.Id)
 			idx[p.Id] = i
 		} else {

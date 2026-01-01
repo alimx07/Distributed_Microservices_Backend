@@ -5,7 +5,7 @@
         "plugin.name": "pgoutput",
         "publication.name" :"my_pub",
         "slot.name": "logical_slot",
-        "database.hostname": "postgres",
+        "database.hostname": "postgres_primary",
         "database.port": "5432",
         "database.user": "logical_rep",
         "database.password": "1234",

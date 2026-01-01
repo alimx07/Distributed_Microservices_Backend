@@ -10,6 +10,9 @@ networks:
   common_net:
     external: true
     name: common_network
+  kafka-net:
+    external: true
+    name: kafka-net
 
 services:
   post_service:
@@ -60,6 +63,7 @@ services:
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
     networks:
       - app_net
+      - kafka-net
 
   connect:
     image: debezium/connect:3.0.0.Final
@@ -74,14 +78,17 @@ services:
       - STATUS_STORAGE_TOPIC=connect_status
     depends_on:
       - kafka
+      - postgres_primary
     networks:
       - app_net
+      - kafka-net
+      - postgres_net
 
   postgres_primary:
     image: postgres:17
     container_name: postgres_primary
     ports:
-      - 5432:5432
+      - 13432:5432
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: mypassword
@@ -99,7 +106,7 @@ services:
     image: postgres:17
     container_name: postgres_secondary
     ports:
-      - 5433:5432
+      - 13433:5432
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: mypassword
