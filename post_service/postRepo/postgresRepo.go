@@ -46,7 +46,7 @@ func (ps *PostgresRepo) CreateComment(ctx context.Context, comment models.Commen
 	commentID := ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
 	_, err := ps.primaryDB.ExecContext(ctx,
 		`INSERT INTO comments (comment_id , user_id, post_id ,content) 
-        VALUES ($1, $2 , $3)`,
+        VALUES ($1, $2 ,$3,$4)`,
 		commentID, comment.User_id, comment.Post_id, comment.Content)
 	if err != nil {
 		log.Println("Error creating Comment: ", err.Error())
