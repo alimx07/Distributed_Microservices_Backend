@@ -31,11 +31,14 @@ type Rule struct {
 	RefillRate int `json:"refillRate"` // requests/s
 }
 
-func NewRateLimiter(ctx context.Context, config models.RateLimitingConfig) (*RateLimiter, error) {
+func NewRateLimiter(config models.RateLimitingConfig) (*RateLimiter, error) {
 	c := redis.NewClusterClient(&redis.ClusterOptions{
 		Addrs:    config.Addr,
 		PoolSize: config.RateLimiterPoolSize,
 	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 	if err := c.Ping(ctx).Err(); err != nil {
 		log.Println("Error in Connection to redis Cluster: ", err)
 		return nil, err
@@ -44,12 +47,13 @@ func NewRateLimiter(ctx context.Context, config models.RateLimitingConfig) (*Rat
 	if err != nil {
 		return nil, err
 	}
+	ctx = context.Background()
 	return &RateLimiter{ctx: ctx, rules: rules, redisCluster: c, script: config.RateLimitingScript}, nil
 }
 
 func (rl *RateLimiter) AllowIP(r *http.Request) (bool, error) {
 	id := ipExtractor(r)
-	log.Println("IP ID", id)
+	// log.Println("IP ID", id)
 	return rl.Allow(id, rl.rules["IP"])
 }
 
@@ -71,12 +75,13 @@ func (rl *RateLimiter) AllowRules(r *http.Request) (bool, error) {
 	}
 	return true, nil
 }
+
 func (rl *RateLimiter) Allow(id string, rule Rule) (bool, error) {
 
 	keys := []string{id}
 	args := []interface{}{rule.RefillRate, rule.Limit, time.Now().Unix()}
 	ok, err := rl.checkRedis(keys, args)
-	log.Printf("REDIS RL: %v %v", ok, err)
+	// log.Printf("REDIS RL: %v %v", ok, err)
 	if err != nil && !ok {
 		return false, err
 	}
@@ -122,4 +127,10 @@ func loadRules(configPath string) (map[string]Rule, error) {
 		return nil, err
 	}
 	return rules, nil
+}
+
+func (r *RateLimiter) close() {
+	if err := r.redisCluster.Close(); err != nil {
+		log.Println("Closing rateLimiter Error: ", err.Error())
+	}
 }

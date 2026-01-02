@@ -3,13 +3,19 @@ package main
 import (
 	"context"
 	"log"
+	"os/signal"
+	"syscall"
+
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	// Initialize logger
 	InitLogger()
 
-	ctx := context.Background()
+	// ctx := context.Background()
 
 	config, err := LoadAppConfig("config.yaml")
 	if err != nil {
@@ -19,7 +25,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to LuaScripts : %v", err)
 	}
-	rateLimiter, err := NewRateLimiter(ctx, config.RateLimiting)
+	rateLimiter, err := NewRateLimiter(config.RateLimiting)
 	if err != nil {
 		log.Fatalf("Failed to initialize rate limiter: %v", err)
 	}
@@ -32,7 +38,7 @@ func main() {
 			continue
 		}
 
-		lb := NewRoundRobin(ctx, serviceConfig.Instances, serviceConfig.HealthCheckInterval)
+		lb := NewRoundRobin(serviceConfig.Instances, serviceConfig.HealthCheckInterval)
 		loadBalancers[serviceName] = lb
 		log.Printf("Load balancer initialized for %s with %d instances", serviceName, len(serviceConfig.Instances))
 	}
@@ -54,13 +60,23 @@ func main() {
 		}
 	}
 
-	redisPool, err := NewRedisPool(config.Redis.RedisAddr, config.Redis.RedisPoolSize)
-	if err != nil {
-		log.Fatalf("Failed to create Redis pool: %v", err)
-	}
-
-	handler := NewHandler(config, loadBalancers, grpcInvoker, rateLimiter, redisPool)
+	// redisPool, err := NewRedisPool(config.Redis.RedisAddr, config.Redis.RedisPoolSize)
+	// if err != nil {
+	// 	rateLimiter.close()
+	// 	for _, lb := range loadBalancers {
+	// 		lb.Close()
+	// 	}
+	// 	log.Fatalf("Failed to create Redis pool: %v", err)
+	// }
+	redis := redis.NewClient(&redis.Options{Addr: config.Redis.RedisAddr})
+	handler := NewHandler(config, loadBalancers, grpcInvoker, rateLimiter, redis)
 	if handler == nil {
+		rateLimiter.close()
+		// grpcInvoker.close()
+		for _, lb := range loadBalancers {
+			lb.Close()
+		}
+		redis.Close()
 		log.Fatal("Failed to create handler")
 	}
 
@@ -68,7 +84,13 @@ func main() {
 	server := NewServer(handler, config)
 	log.Printf("Starting API Gateway on %s:%s", config.Server.Host, config.Server.Port)
 
-	if err := server.start(); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
-	}
+	go func() {
+		log.Println(server.start())
+	}()
+
+	<-ctx.Done()
+
+	stop()
+
+	server.Close()
 }

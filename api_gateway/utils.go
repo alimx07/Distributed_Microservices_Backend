@@ -142,7 +142,8 @@ func ValidateToken(token string, pubKey []byte, r *redis.Client, luaScript strin
 		log.Printf("Error checking token denylist: %v", err)
 		// Fail-open again
 	} else if res, ok := result.(int64); ok && res == 1 {
-		return "", errors.New("token revoked")
+		log.Printf("Token Revoked: %v", token)
+		return "", errors.New("invalid")
 	}
 	rsaPubKey, err := jwt.ParseRSAPublicKeyFromPEM(pubKey)
 	if err != nil {
@@ -160,7 +161,8 @@ func ValidateToken(token string, pubKey []byte, r *redis.Client, luaScript strin
 	})
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return "", errors.New("token expired")
+			log.Printf("Token expired: %v", token)
+			return "", errors.New("invalid")
 		}
 		return "", err
 	}
@@ -173,42 +175,52 @@ func ValidateToken(token string, pubKey []byte, r *redis.Client, luaScript strin
 	return claims.Subject, nil
 }
 
-type RedisPool struct {
-	pool     chan *redis.Client
-	numConns int
-}
+// type RedisPool struct {
+// 	pool     chan *redis.Client
+// 	numConns int
+// }
 
-// Create new Connection pool of size N
-func NewRedisPool(addr string, n int) (*RedisPool, error) {
-	log.Println("------>", addr, n)
-	var client *redis.Client
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-	var numOfCon int
-	rsPool := &RedisPool{
-		pool: make(chan *redis.Client, n),
-	}
-	for range n {
-		client = redis.NewClient(&redis.Options{
-			Addr: addr,
-		})
-		if err := client.Ping(ctx).Err(); err != nil {
-			continue
-		}
-		numOfCon++
-		rsPool.pool <- client
-	}
-	if numOfCon == 0 {
-		return nil, errors.New("no Connections opened with redis")
-	}
-	rsPool.numConns = numOfCon
-	return rsPool, nil
-}
+// // Create new Connection pool of size N
+// func NewRedisPool(addr string, n int) (*RedisPool, error) {
+// 	log.Println("------>", addr, n)
+// 	var client *redis.Client
+// 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+// 	defer cancel()
+// 	var numOfCon int
+// 	rsPool := &RedisPool{
+// 		pool: make(chan *redis.Client, n),
+// 	}
+// 	for range n {
+// 		client = redis.NewClient(&redis.Options{
+// 			Addr: addr,
+// 		})
+// 		if err := client.Ping(ctx).Err(); err != nil {
+// 			continue
+// 		}
+// 		numOfCon++
+// 		rsPool.pool <- client
+// 	}
+// 	if numOfCon == 0 {
+// 		return nil, errors.New("no Connections opened with redis")
+// 	}
+// 	rsPool.numConns = numOfCon
+// 	return rsPool, nil
+// }
 
-func (rp *RedisPool) Get() *redis.Client {
-	return <-rp.pool
-}
+// func (rp *RedisPool) Get() *redis.Client {
+// 	return <-rp.pool
+// }
 
-func (rp *RedisPool) Put(r *redis.Client) {
-	rp.pool <- r
-}
+// func (rp *RedisPool) Put(r *redis.Client) {
+// 	rp.pool <- r
+// }
+
+// func (rp *RedisPool) close() {
+// 	var client *redis.Client
+// 	for range rp.numConns {
+// 		client = rp.Get()
+// 		if err := client.Close(); err != nil {
+// 			log.Printf("Error in Closing Client %v in redisPool", client.String())
+// 		}
+// 	}
+// }

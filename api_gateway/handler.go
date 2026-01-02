@@ -8,7 +8,10 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
 )
@@ -18,11 +21,18 @@ type Handler struct {
 	loadBalancers map[string]*RoundRobin
 	grpcInvoker   *GRPCInvoker
 	rateLimiter   *RateLimiter
-	redis         *RedisPool
+	redis         *redis.Client
 	routeMap      map[string]map[string]*models.RouteConfig // method -> path -> config
+	wg            *sync.WaitGroup
 }
 
-func NewHandler(config *models.AppConfig, loadBalancers map[string]*RoundRobin, grpcInvoker *GRPCInvoker, rateLimiter *RateLimiter, redis *RedisPool) *Handler {
+// TODO: handle that dynamically
+var multiValueParams = map[string]bool{
+	"PostId": true,
+	"UserId": true,
+}
+
+func NewHandler(config *models.AppConfig, loadBalancers map[string]*RoundRobin, grpcInvoker *GRPCInvoker, rateLimiter *RateLimiter, redis *redis.Client) *Handler {
 	h := &Handler{
 		config:        config,
 		loadBalancers: loadBalancers,
@@ -30,10 +40,11 @@ func NewHandler(config *models.AppConfig, loadBalancers map[string]*RoundRobin, 
 		rateLimiter:   rateLimiter,
 		redis:         redis,
 		routeMap:      make(map[string]map[string]*models.RouteConfig),
+		wg:            &sync.WaitGroup{},
 	}
 	var err error
 
-	log.Println(config.Server.PublickeyAddr)
+	// log.Println(config.Server.PublickeyAddr)
 	config.PublicKey, err = GetPublicKey(config.Server.PublickeyAddr)
 
 	if err != nil {
@@ -58,13 +69,13 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s is requested\n", r.URL.Path)
 
 	// CORS
-	w.Header().Set("Access-Control-Allow-Origin", "localhost") // mock url for now
+	w.Header().Set("Access-Control-Allow-Origin", "localhost:8080") // mock url for now
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	// preflight
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type , Authorization , RefreshToken")
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -135,14 +146,17 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Invoke gRPC method dynamically
-	ctx := context.Background()
+	// h.wg.Add(1)
 	responseJSON, err := h.grpcInvoker.Invoke(
-		ctx,
+		r.Context(),
 		conn,
 		route.GRPCService,
 		route.GRPCMethod,
 		requestData,
 	)
+
+	// Request To service End
+	// h.wg.Done()
 	if err != nil {
 		log.Printf("gRPC invocation error: %v", err)
 		http.Error(w, fmt.Sprintf("Service error: %v", err), http.StatusInternalServerError)
@@ -184,11 +198,14 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.HasSuffix(route.Path, "logout") {
-		acessToken := h.extractTokens(r)["accessToken"].(string)
-		rc := h.redis.Get()
+		accessToken, ok := h.extractTokens(r)["accessToken"].(string)
+		if !ok || accessToken == "" {
+			log.Println("Invalid Access Token")
+			http.Error(w, fmt.Sprintf("Invalid Access Token: %v", err), http.StatusUnauthorized)
+		}
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		rc.Eval(ctx, h.config.Redis.AddScript, []string{acessToken}, []interface{}{5 * time.Minute})
+		h.redis.Eval(ctx, h.config.Redis.AddScript, []string{accessToken}, []interface{}{5 * 60 * time.Second})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -275,8 +292,11 @@ func (h *Handler) buildRequestData(r *http.Request, route *models.RouteConfig, b
 
 	// query parameters
 	for key, values := range r.URL.Query() {
-		if len(values) > 0 {
+		// log.Println(key, "--->", values, "---->", multiValueParams[key])
+		if multiValueParams[key] {
 			data[key] = values
+		} else {
+			data[key] = values[0]
 		}
 	}
 	for key := range data {
@@ -321,28 +341,20 @@ func (h *Handler) extractPathParams(pattern string, r *http.Request) map[string]
 }
 
 func (h *Handler) checkAuth(w http.ResponseWriter, r *http.Request) (string, bool) {
-	authToken := h.extractTokens(r)["accessToken"].(string)
-	if authToken == "" {
+	authToken, ok := h.extractTokens(r)["accessToken"].(string)
+	if !ok || authToken == "" {
 		log.Println("NO Authorization header found")
 		http.Error(w, "Authorization header required", http.StatusUnauthorized)
 		return "", false
 	}
 	// Add nil check for redis
 	if h.redis == nil {
-		log.Println("Redis pool is nil")
+		log.Println("Redis Connection is nil")
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return "", false
 	}
 
-	redisClient := h.redis.Get()
-	if redisClient == nil {
-		log.Println("Failed to get Redis client from pool")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return "", false
-	}
-	defer h.redis.Put(redisClient)
-
-	userID, err := ValidateToken(authToken, h.config.PublicKey, redisClient, h.config.Redis.CheckScript)
+	userID, err := ValidateToken(authToken, h.config.PublicKey, h.redis, h.config.Redis.CheckScript)
 	if err != nil {
 		log.Printf("Token validation error: %v", err)
 		if err.Error() == "invalid" {
@@ -354,4 +366,12 @@ func (h *Handler) checkAuth(w http.ResponseWriter, r *http.Request) (string, boo
 	}
 
 	return userID, true
+}
+
+func (h *Handler) close() {
+	h.rateLimiter.close()
+	for _, lb := range h.loadBalancers {
+		lb.Close()
+	}
+	h.redis.Close()
 }

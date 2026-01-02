@@ -22,9 +22,10 @@ import (
 */
 
 type RoundRobin struct {
-	ctx   context.Context
-	idx   atomic.Uint32 // to ensure even distributed under concurrent use
-	conns []*Service    // persistence conns
+	ctx    context.Context
+	cancel context.CancelFunc
+	idx    atomic.Uint32 // to ensure even distributed under concurrent use
+	conns  []*Service    // persistence conns
 	// current atomic.Value  // atomic point to curr snapshot
 }
 
@@ -42,13 +43,15 @@ type Service struct {
 		and to avoid concurrency issues, COPY ON WRITE can be used with just current atomic pointer for curr snapshot
 		More complexity but cool and zero downtime for api_gateway
 */
-func NewRoundRobin(ctx context.Context, serviceURLs []string, pingInterval time.Duration) *RoundRobin {
+func NewRoundRobin(serviceURLs []string, pingInterval time.Duration) *RoundRobin {
 	if pingInterval <= 0 {
 		pingInterval = 5 * time.Second
 	}
+	ctx, cancel := context.WithCancel(context.Background())
 	r := &RoundRobin{
-		ctx:   ctx,
-		conns: make([]*Service, 0, len(serviceURLs)),
+		ctx:    ctx,
+		cancel: cancel,
+		conns:  make([]*Service, 0, len(serviceURLs)),
 	}
 
 	for _, url := range serviceURLs {
@@ -72,9 +75,6 @@ func NewRoundRobin(ctx context.Context, serviceURLs []string, pingInterval time.
 		log.Fatal("No service instances available")
 	}
 
-	// intial health check at first
-	r.healthCheck()
-
 	go r.ping(pingInterval) // periodic health checks
 	return r
 }
@@ -96,22 +96,27 @@ func (r *RoundRobin) ServiceConn() (*grpc.ClientConn, error) {
 }
 
 func (r *RoundRobin) ping(pingInterval time.Duration) {
+
 	ticker := time.NewTicker(pingInterval)
 	defer ticker.Stop()
+	client := &http.Client{Timeout: 2 * time.Second}
+	// intial healthCheck
+	r.healthCheck(client)
 
+	//start checking prediocally
 	for {
 		select {
 		case <-r.ctx.Done():
 			return
 		case <-ticker.C:
-			r.healthCheck()
+			r.healthCheck(client)
 		}
 	}
 }
 
-func (r *RoundRobin) healthCheck() {
+func (r *RoundRobin) healthCheck(client *http.Client) {
 	for _, srv := range r.conns {
-		resp, err := http.Get(healthEnd(srv.URL))
+		resp, err := client.Get(healthEnd(srv.URL))
 		if err == nil && resp.StatusCode == http.StatusOK {
 			if !srv.healthy.Load() {
 				log.Printf("Service %s is now healthy", srv.URL)
@@ -125,10 +130,15 @@ func (r *RoundRobin) healthCheck() {
 			// log.Printf("Service %s is  unhealthy", srv.URL)
 			srv.healthy.Store(false)
 		}
+		resp.Body.Close()
 	}
+
 }
 
 func (r *RoundRobin) Close() {
+
+	// End Ping
+	r.cancel()
 	for _, srv := range r.conns {
 		if srv.conn != nil {
 			srv.conn.Close()

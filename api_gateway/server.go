@@ -1,17 +1,22 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"net/http"
+	"sync/atomic"
+	"time"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
 )
 
 type Server struct {
-	config  *models.AppConfig
-	router  *http.ServeMux
-	handler *Handler
+	config     *models.AppConfig
+	router     *http.ServeMux
+	httpServer *http.Server
+	handler    *Handler
+	serviceOFF atomic.Bool
 }
 
 func NewServer(handler *Handler, config *models.AppConfig) *Server {
@@ -32,7 +37,9 @@ func (s *Server) start() error {
 		Handler: handler,
 	}
 
+	s.serviceOFF.Store(false)
 	log.Printf("API Gateway starting on %s:%s", s.config.Server.Host, s.config.Server.Port)
+	s.httpServer = httpServer
 	return httpServer.ListenAndServe()
 }
 
@@ -48,7 +55,38 @@ func (s *Server) addRoutes() {
 	}
 	// Health check endpoint
 	s.router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "healthy"}`))
+		if s.serviceOFF.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(`{"status": "unhealth"}`))
+		} else {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"status": "healthy"}`))
+		}
 	})
+}
+
+func (s *Server) Close() {
+	// prevent server from get newConns
+	s.serviceOFF.Store(true)
+
+	// wait untill reflected in front LoadBalancer healthChecker
+	time.Sleep(5 * time.Second)
+
+	// Make sure current requests served
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	// This also will ensure that all GrpcRequests Ended successfully
+	// as they are part of GenericHandler in all httpRequests
+	if s.httpServer != nil {
+		if err := s.httpServer.Shutdown(ctx); err != nil {
+			log.Println("Error in Closing HttpServer gracefully: ", err.Error())
+		}
+		log.Println("HttpServer Closed Successfully")
+	}
+
+	// Close any open resources that controlled by handler
+	s.handler.close()
+
+	// Closed Finally
 }

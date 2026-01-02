@@ -60,7 +60,8 @@ func (g *GRPCInvoker) LoadProtoset(protosetPath string) error {
 
 		fd, err := protodesc.NewFile(fdProto, files)
 		if err != nil {
-			return fmt.Errorf("failed to create file descriptor for %s: %w", fdProto.GetName(), err)
+			log.Printf("failed to create file descriptor for %s: %w", fdProto.GetName(), err)
+			continue
 		}
 
 		files.filesByPath[fd.Path()] = fd
@@ -199,3 +200,7 @@ func (f *fakeFiles) RegisterFile(fd protoreflect.FileDescriptor) error {
 	f.filesByPath[fd.Path()] = fd
 	return nil
 }
+
+// func (g *GRPCInvoker) close() {
+
+// }
