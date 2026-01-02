@@ -26,7 +26,7 @@ func NewRedisRepo(repo postRepo.PersistenceDB, addrs []string, pass string) (*re
 		Password: pass,
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := client.Ping(ctx).Err(); err != nil {
 		log.Println("Error in Connection to redis Cluster: ", err)
@@ -244,6 +244,12 @@ func (rs *redisRepo) SyncCounters() {
 	}
 }
 
+func (rs *redisRepo) Close() {
+	if err := rs.redisClient.Close(); err != nil {
+		log.Println("Error Closing RedisCluster Client: ", err.Error())
+	}
+	log.Println("Redis Cluster Closed Successfully")
+}
 func postKey(id string) string {
 	return fmt.Sprintf("post:%v", id)
 }

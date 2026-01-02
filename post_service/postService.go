@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"sync/atomic"
+	"time"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/cachedRepo"
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/models"
@@ -20,6 +22,9 @@ type postService struct {
 	presistanceDB postRepo.PersistenceDB
 	cache         cachedRepo.CachedRepo
 	config        models.Config
+	httpServer    *http.Server
+	grpcServer    *grpc.Server
+	serviceOFF    atomic.Bool
 }
 
 func NewPostService(presistance postRepo.PersistenceDB, cache cachedRepo.CachedRepo, config models.Config) *postService {
@@ -34,9 +39,10 @@ func (ps *postService) start() error {
 	log.Printf("Starting gRPC server on %s:%s", ps.config.ServerHost, ps.config.ServerPort)
 	listener, err := net.Listen("tcp", net.JoinHostPort(ps.config.ServerHost, ps.config.ServerPort))
 	if err != nil {
-		log.Fatal("Can not intialized Connection on Host:", net.JoinHostPort(ps.config.ServerHost, ps.config.ServerPort))
+		return err
 	}
 	grpcserver := grpc.NewServer()
+	ps.grpcServer = grpcserver
 	pb.RegisterPostSeriveServer(grpcserver, ps)
 	// reflection.Register(grpcserver)
 	return grpcserver.Serve(listener)
@@ -178,9 +184,15 @@ func (ps *postService) StartHealthServer() error {
 	router := http.NewServeMux()
 
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "ok"}`))
-		w.Write([]byte(`{"service": "post_service"}`))
+
+		if ps.serviceOFF.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(`{"status": "down" , service": "post_service"}`))
+		} else {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"status": "ok" , service": "post_service"}`))
+		}
+
 	})
 
 	var handler http.Handler = router
@@ -189,5 +201,37 @@ func (ps *postService) StartHealthServer() error {
 		Handler: handler,
 	}
 	log.Printf("PostServer HTTP starting on %s:%s\n", ps.config.ServerHost, ps.config.ServerHttpPort)
+	ps.httpServer = server
 	return server.ListenAndServe()
+}
+
+func (ps *postService) close() {
+
+	// mark service as OFF
+	ps.serviceOFF.Store(true)
+
+	// wait until state reflected in api_gateway
+	time.Sleep(5 * time.Second)
+
+	// By This Time almost all requests already end
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if ps.httpServer != nil {
+		if err := ps.httpServer.Shutdown(ctx); err != nil {
+			log.Println("Error in Closing httpServer: ", err.Error())
+		}
+		log.Println("HTTP Server Closed Successfully")
+	}
+
+	ps.grpcServer.GracefulStop()
+
+	if ps.cache != nil {
+		ps.cache.Close()
+	}
+	if ps.presistanceDB != nil {
+		ps.presistanceDB.Close()
+	}
+
+	// service Closed finally
 }

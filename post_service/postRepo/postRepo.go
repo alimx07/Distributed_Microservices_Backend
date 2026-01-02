@@ -18,4 +18,5 @@ type PersistenceDB interface {
 	GetLikes(ctx context.Context, id string) ([]models.Like, error)
 	GetCounters(ctx context.Context, ids []string) ([]models.CachedCounter, error)
 	UpdateCounters(ctx context.Context, counters []models.CachedCounter) error
+	Close()
 }

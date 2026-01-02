@@ -222,3 +222,16 @@ func (ps *PostgresRepo) UpdateCounters(ctx context.Context, counters []models.Ca
 	}
 	return nil
 }
+
+func (ps *PostgresRepo) Close() {
+	if err := ps.primaryDB.Close(); err != nil {
+		log.Printf("Error Closing Primary DB --> %v", err.Error())
+	} else {
+		log.Println("PrimaryDB closed Successfully")
+	}
+	if err := ps.replicaDB.Close(); err != nil {
+		log.Printf("Error Closing Replica DB --> %v", err.Error())
+	} else {
+		log.Println("ReplicaDB closed Successfully")
+	}
+}

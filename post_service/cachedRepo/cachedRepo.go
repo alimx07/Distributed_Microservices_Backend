@@ -14,4 +14,5 @@ type CachedRepo interface {
 	UpdateLikesCounter(ctx context.Context, id string, delta int64)
 	UpdateCommentsCounter(ctx context.Context, id string, delta int64)
 	SyncCounters()
+	Close()
 }
