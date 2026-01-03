@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   gateway_net:
     driver: bridge
@@ -16,22 +14,20 @@ services:
       dockerfile: Dockerfile
     image: api_gateway:1.0.0
     container_name: api_gateway
-    environment:
-      # Server Configuration
-      - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=8080
-      - PUBLIC_KEY_ADDR=http://user-service1:8080/public-key
-      
-      # Redis Configuration (for rate limiting)
-      - CLUSTER_ADDR=redis-node-1:6379,redis-node-2:6379,redis-node-3:6379,redis-node-4:6379,redis-node-5:6379,redis-node-6:6379
-      - REDIS_ADDR=redis:6379
+    env_file:
+      - .env
     ports:
       - "8080:8080"
+    volumes:
+        # bind config files
+      - ./config.yaml:/root/config.yaml
+      - ./rate_rules.json:/root/rate_rules.json
+      - ./scripts:/root/scripts
+      - ./_proto:/root/_proto 
     networks:
       - gateway_net
       - redis_cluster_net
       - common_net
-    restart: on-failure
     
 
   redis-node-1: &redis-node-template

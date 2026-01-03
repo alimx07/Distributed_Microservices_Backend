@@ -6,7 +6,7 @@ server:
 
 rate_limiting:
   rules_config: "rate_rules.json"
-  script_path: "redis_script.lua"
+  script_path: "scripts/redis_script.lua"
   addrs: 
     - localhost:6379
     - localhost:6380
@@ -14,8 +14,8 @@ rate_limiting:
 
 redis_config:
   redis_addr: "localhost:7000"
-  redis_check_script: "check_token.lua"
-  redis_add_script: "add_token.lua"
+  redis_check_script: "scripts/check_token.lua"
+  redis_add_script: "scripts/add_token.lua"
   redis_pool_size: 5
 
 # Service instances for load balancing
