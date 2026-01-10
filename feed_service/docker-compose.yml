@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   redis_cluster_net:
     driver: bridge
@@ -11,31 +9,20 @@ networks:
   kafka-net:
     external: true
     name: kafka-net
+  etcd_net:
+    external: true
+    name: etcd_net
+
 services:
   feed_service:
     build:
       context: .
       dockerfile: Dockerfile
     image: feed_service:1.0.0
-    container_name: feed_service
+    env_file:
+      - .env
     depends_on:
       - redis-cluster-creator
-    environment:
-      - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=50081
-      - SERVER_HTTP_PORT=8080
-      - CLUSTER_ADDR=redis-node-1:6379,redis-node-2:6379,redis-node-3:6379,redis-node-4:6379,redis-node-5:6379,redis-node-6:6379
-      - CACHE_PASSWORD=mypassword
-      - GROUP_ID=feed_service-1
-      - BOOTSTRAP_SERVERS=kafka:9092
-      - OFFSET_RESET=latest
-      - FETCH_MIN_BYTES=1
-      - TOPICS=post_service.public.posts
-      - POST_SERVICE=post_service:50061
-      - USER_SERVICE=user-service1:50051
-      - FOLLOW_SERVICE=follow-service:50071
-    ports:
-      - 50081:50081
     volumes:
       - redis_data:/bitnami/redis/data
     networks:
@@ -43,39 +30,30 @@ services:
       - redis_cluster_net
       - common_net
       - kafka-net
+      - etcd_net
 
   redis-node-1: &redis-node-template
     image:  redis:7.2.11-alpine3.21
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
-    ports:
-      - 7051:6379
     networks:
       - redis_cluster_net
+
   redis-node-2:
     <<: *redis-node-template
-    ports:
-      - 7052:6379
 
   redis-node-3:
     <<: *redis-node-template
-    ports:
-      - 7053:6379
+
 
   redis-node-4:
     <<: *redis-node-template
-    ports:
-      - 7054:6379
+
   redis-node-5:
     <<: *redis-node-template
-    ports:
-      - 7055:6379
-
   redis-node-6:
     <<: *redis-node-template
-    ports:
-      - 7056:6379
 
   redis-cluster-creator:
     image: redis:7.2.11-alpine3.21

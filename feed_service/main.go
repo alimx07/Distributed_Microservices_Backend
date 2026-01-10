@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os/signal"
 	"syscall"
 )
@@ -10,7 +11,6 @@ import (
 func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
 	appConfig, err := LoadConfig()
 	if err != nil {
 		log.Fatal("Error in Loading Service Config: ", err.Error())
@@ -28,14 +28,28 @@ func main() {
 	if err != nil {
 		log.Fatal("Error in Starting Feed Service: ", err.Error())
 	}
+
+	errChan := make(chan error, 1)
+
 	go func() {
-		service.StartHealthServer()
+		if err := service.StartHealthServer(); err != nil && err != http.ErrServerClosed {
+			errChan <- err
+		}
 	}()
 	go func() {
-		log.Fatal(service.Start())
+		if err := service.Start(); err != nil {
+			errChan <- err
+		}
 	}()
 
-	<-ctx.Done()
+	select {
+	case <-ctx.Done():
+		log.Println("ShutDown Signal received")
+	case err := <-errChan:
+		log.Println("Service Error: ", err.Error())
+	}
+
+	stop()
 
 	service.close()
 }
