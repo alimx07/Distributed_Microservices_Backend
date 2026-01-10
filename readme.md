@@ -1,36 +1,33 @@
-## Project Overview
-This repository is a practical microservices backend.
+# Overview
+
+There’s a common saying in the industry that the first rule of microservices is: *don’t do microservices*. The idea is that if you can avoid the complexity, you probably should. In this repository, I do them anyway — but with a focus on understanding the real cost and learning.
+
+This is not just about writing code. It includes the system design around the services, the infrastructure including data stores, message queues, caching layers, and other supporting pieces that make distributed systems actually work.
+
+The journey is incremental and covers several stages:
+
+1. **Services Desing** — starting with Design & implement the services.
+2. **Containerization** — packaging services and dependencies with Docker Compose, managing networks, secrets, and inter-service communication.
+3. **Kubernetes** — moving toward production-style deployment, with service discovery, networking, scaling, and security in mind.
+4. **Observability on Kubernetes** — adding logging, metrics, and tracing to understand behavior and failures across services.
 
 
-Services:
-- API Gateway
-  - User authentication
-  - Rate limiting (Redis)
-  - Routing and service load balancing
-  - REST/HTTP to gRPC translation
+## Services
 
-- User Service
-  - User data management
-  - PostgreSQL with a read replica
-- Feed Service
-  - User feed generation using a hybrid of fanout-on-write and fanout-on-read with caches
+The project will include multiple services written in **Go** and **Spring Boot**, including:
 
-- Post Service
-  - Posts, comments, likes
-  - PostgreSQL with a read replica
-  - Outbox Pattern by Using Debezium and Kafka
+- `api_gateway`
+- `post_service`
+- `follow_service`
+- `feed_service`
+- `user_service`
 
-- Follow Service
-  - Follow relationships
+---------------------------------------------
 
-- Chat Service
-  - WebSocket-based chat
+Work is in progress. Iterations will be pushed as the system evolves.
 
-Core goals:
-- Build a small but realistic system with multiple services, different techs and pragmatic trade-offs.
-- Push it to Kubernetes later, and observe it end-to-end with Prometheus/Grafana.
-- Testing the system using K6, measure it, and fix real bottlenecks.
 
-Notes:
- - All services should talk with gRPC and provide Rest Apis for client
- - API_Gateway responsable for converting Https for Grpc and single auth to system
+----------------------------------------------
+
+
+## Services Design & Implementation
