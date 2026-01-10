@@ -56,6 +56,11 @@
 			<artifactId>grpc-server-spring-boot-starter</artifactId>
 			<version>3.1.0.RELEASE</version>
 		</dependency>
+		<dependency>
+			<groupId>io.etcd</groupId>
+			<artifactId>jetcd-core</artifactId>
+			<version>0.8.5</version>
+		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>

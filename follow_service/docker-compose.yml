@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   postgres_follow_net:
     driver: bridge
@@ -8,33 +6,23 @@ networks:
   common_net:
     external: true
     name: common_network
+  etcd_net:
+    external: true
+    name: etcd_net
+
 services:
   follow-service:
     build:
       context: .
       dockerfile: Dockerfile
     image: follow_service:1.0.0
-    container_name: follow-service
-    environment:
-      - DB_HOST=postgres_follow_primary
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=mypassword
-      - DB_NAME=followdb
-      - DB_REPLICA_HOST=postgres_follow_secondary
-      - DB_REPLICA_PORT=5432
-      - DB_REPLICA_USER=postgres
-      - DB_REPLICA_PASSWORD=mypassword
-      - DB_REPLICA_NAME=followdb
-      - SERVER_PORT=8080
-      - GRPC_PORT=50071
-    ports:
-      - 50071:50071
-      - 10222:8080
+    env_file:
+      - .follow.env
     networks:
       - app_net
       - postgres_follow_net
       - common_net
+      - etcd_net
     depends_on:
       - postgres_follow_primary
       - postgres_follow_secondary
@@ -42,13 +30,8 @@ services:
   postgres_follow_primary:
     image: postgres:17
     container_name: postgres_follow_primary
-    ports:
-      - 10432:5432
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: followdb
-      POSTGRES_HOST: postgres
+    env_file:
+      - .primary.env
     volumes:
       - primary_follow_data:/var/lib/postgresql/data
       - ./primary_init:/docker-entrypoint-initdb.d
@@ -59,19 +42,15 @@ services:
   postgres_follow_secondary:
     image: postgres:17
     container_name: postgres_follow_secondary
-    ports:
-      - 10433:5432
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mypassword
-      PGDATA: /var/lib/postgresql/data
-      PGPASSWORD: 12345
+    env_file:
+      - .replica.env
     volumes:
       - secondary_follow_data:/var/lib/postgresql/data
       - ./secondary_init:/docker-entrypoint-initdb.d
     networks:
       - postgres_follow_net
       - app_net
+    restart: on-failure:3
 volumes:
   primary_follow_data:
     driver: local
