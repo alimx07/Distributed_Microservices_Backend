@@ -3,12 +3,14 @@ package models
 import "time"
 
 type AppConfig struct {
-	Server       ServerConfig             `yaml:"server"`
-	RateLimiting RateLimitingConfig       `yaml:"rate_limiting"`
-	Redis        RedisConfig              `yaml:"redis_config"`
-	Services     map[string]ServiceConfig `yaml:"services"`
-	Routes       []RouteConfig            `yaml:"routes"`
-	PublicKey    []byte
+	Server           ServerConfig       `yaml:"server"`
+	RateLimiting     RateLimitingConfig `yaml:"rate_limiting"`
+	Redis            RedisConfig        `yaml:"redis_config"`
+	ServiceRegistery RegisteryConfig    `yaml:"service_registery"`
+	ProtoFiles       map[string]string  `yaml:"protoset_files"`
+	// Services     map[string]ServiceConfig `yaml:"services"`
+	Routes    []RouteConfig `yaml:"routes"`
+	PublicKey []byte
 }
 
 type ServerConfig struct {
@@ -35,11 +37,14 @@ type RedisConfig struct {
 	RedisAddr       string `yaml:"redis_addr"`
 	AddScriptPath   string `yaml:"redis_add_script"`
 	CheckScriptPath string `yaml:"redis_check_script"`
-	RedisPoolSize   int    `yaml:"redis_pool_size"`
 	AddScript       string
 	CheckScript     string
 }
 
+type RegisteryConfig struct {
+	ServiceRegisteryPath   string `yaml:"service_registery_path"`
+	ServiceRegisteryPrefix string `yaml:"service_registery_prefix"`
+}
 type RouteConfig struct {
 	Path             string `yaml:"path"`
 	Method           string `yaml:"method"`

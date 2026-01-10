@@ -17,13 +17,13 @@ import (
 )
 
 type Handler struct {
-	config        *models.AppConfig
-	loadBalancers map[string]*RoundRobin
-	grpcInvoker   *GRPCInvoker
-	rateLimiter   *RateLimiter
-	redis         *redis.Client
-	routeMap      map[string]map[string]*models.RouteConfig // method -> path -> config
-	wg            *sync.WaitGroup
+	config       *models.AppConfig
+	loadBalancer *LoadBalancer
+	grpcInvoker  *GRPCInvoker
+	rateLimiter  *RateLimiter
+	redis        *redis.Client
+	routeMap     map[string]map[string]*models.RouteConfig // method -> path -> config
+	wg           *sync.WaitGroup
 }
 
 // TODO: handle that dynamically
@@ -32,15 +32,15 @@ var multiValueParams = map[string]bool{
 	"UserId": true,
 }
 
-func NewHandler(config *models.AppConfig, loadBalancers map[string]*RoundRobin, grpcInvoker *GRPCInvoker, rateLimiter *RateLimiter, redis *redis.Client) *Handler {
+func NewHandler(config *models.AppConfig, loadBalancer *LoadBalancer, grpcInvoker *GRPCInvoker, rateLimiter *RateLimiter, redis *redis.Client) *Handler {
 	h := &Handler{
-		config:        config,
-		loadBalancers: loadBalancers,
-		grpcInvoker:   grpcInvoker,
-		rateLimiter:   rateLimiter,
-		redis:         redis,
-		routeMap:      make(map[string]map[string]*models.RouteConfig),
-		wg:            &sync.WaitGroup{},
+		config:       config,
+		loadBalancer: loadBalancer,
+		grpcInvoker:  grpcInvoker,
+		rateLimiter:  rateLimiter,
+		redis:        redis,
+		routeMap:     make(map[string]map[string]*models.RouteConfig),
+		wg:           &sync.WaitGroup{},
 	}
 	var err error
 
@@ -131,7 +131,7 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lb, exists := h.loadBalancers[route.Service]
+	lb, exists := h.loadBalancer.Balancers[route.Service]
 	if !exists {
 		http.Error(w, "Service not available", http.StatusServiceUnavailable)
 		return
@@ -370,8 +370,6 @@ func (h *Handler) checkAuth(w http.ResponseWriter, r *http.Request) (string, boo
 
 func (h *Handler) close() {
 	h.rateLimiter.close()
-	for _, lb := range h.loadBalancers {
-		lb.Close()
-	}
+	h.loadBalancer.close()
 	h.redis.Close()
 }

@@ -6,6 +6,9 @@ networks:
   common_net:
     external: true
     name: common_network
+  etcd_net:
+    external: true
+    name: etcd_net
 
 services:
   api_gateway:
@@ -13,7 +16,6 @@ services:
       context: .
       dockerfile: Dockerfile
     image: api_gateway:1.0.0
-    container_name: api_gateway
     env_file:
       - .env
     ports:
@@ -28,6 +30,7 @@ services:
       - gateway_net
       - redis_cluster_net
       - common_net
+      - etcd_net
     
 
   redis-node-1: &redis-node-template
@@ -35,34 +38,22 @@ services:
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
-    ports:
-      - 7001:6379
     networks:
       - redis_cluster_net
 
   redis-node-2:
     <<: *redis-node-template
-    ports:
-      - 7002:6379
 
   redis-node-3:
     <<: *redis-node-template
-    ports:
-      - 7003:6379
 
   redis-node-4:
     <<: *redis-node-template
-    ports:
-      - 7004:6379
   redis-node-5:
     <<: *redis-node-template
-    ports:
-      - 7005:6379
 
   redis-node-6:
     <<: *redis-node-template
-    ports:
-      - 7006:6379
 
   redis-cluster-creator:
     image: redis:7.2.11-alpine3.21
@@ -83,8 +74,6 @@ services:
     container_name: redis
     volumes:
       - redis_data:/data
-    ports:
-      - 7007:6379
     networks:
       - gateway_net
     command: redis-server --appendonly yes

@@ -23,8 +23,8 @@ func LoadConfig() (models.ServerConfig, error) {
 		log.Println("Warning: .env file not found, using environment variables")
 	}
 	config := models.ServerConfig{
-		Host:          os.Getenv("SERVER_PORT"),
-		Port:          os.Getenv("SERVER_HOST"),
+		Port:          os.Getenv("SERVER_PORT"),
+		Host:          os.Getenv("SERVER_HOST"),
 		PublickeyAddr: os.Getenv("Public_Key_Addr"),
 	}
 	return config, nil
@@ -63,6 +63,8 @@ type PublicKeyResponse struct {
 	PublicKey string `json:"publicKey"`
 }
 
+// TODO: This is very naive way
+// Change it to more dynamic one
 func GetPublicKey(addr string) ([]byte, error) {
 
 	var err error
@@ -75,18 +77,18 @@ func GetPublicKey(addr string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Println(resp.Status)
-		log.Println(resp.StatusCode)
+		// log.Println(resp.Status)
+		// log.Println(resp.StatusCode)
 		return nil, err
 	}
 
-	log.Println(resp.StatusCode)
+	// log.Println(resp.StatusCode)
 	var data PublicKeyResponse
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		log.Println(err.Error())
 		return nil, err
 	}
-	log.Println(data.PublicKey)
+	// log.Println(data.PublicKey)
 	return []byte(data.PublicKey), nil
 }
 
@@ -113,14 +115,18 @@ func LoadAppConfig(filename string) (*models.AppConfig, error) {
 		config.Server.PublickeyAddr = publicKeyAddr
 	}
 	if clusterAddr := os.Getenv("CLUSTER_ADDR"); clusterAddr != "" {
-		log.Println(clusterAddr)
+		// log.Println(clusterAddr)
 		clusterAddr := strings.Split(clusterAddr, ",")
 		config.RateLimiting.Addr = clusterAddr
 	}
 
 	if redisAddr := os.Getenv("REDIS_ADDR"); redisAddr != "" {
-		log.Println(redisAddr)
+		// log.Println(redisAddr)
 		config.Redis.RedisAddr = redisAddr
+	}
+
+	if registeryAddr := os.Getenv("REGISTERY_ADDR"); registeryAddr != "" {
+		config.ServiceRegistery.ServiceRegisteryPath = registeryAddr
 	}
 
 	return &config, nil

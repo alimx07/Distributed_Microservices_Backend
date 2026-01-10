@@ -11,11 +11,5 @@ WORKDIR /root/
 COPY --from=builder /app/app .
 
 
-# COPY config.yaml .
-# COPY rate_rules.json .
-# COPY ./scripts ./
-
-# COPY _proto/ ./_proto/
-
 EXPOSE 8080
 CMD ["./app"]

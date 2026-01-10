@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os/signal"
 	"syscall"
 
@@ -31,32 +32,36 @@ func main() {
 	}
 	log.Println("Rate limiter initialized")
 
-	loadBalancers := make(map[string]*RoundRobin)
-	for serviceName, serviceConfig := range config.Services {
-		if len(serviceConfig.Instances) == 0 {
-			log.Printf("Warning: No instances configured for service %s", serviceName)
-			continue
-		}
-
-		lb := NewRoundRobin(serviceConfig.Instances, serviceConfig.HealthCheckInterval)
-		loadBalancers[serviceName] = lb
-		log.Printf("Load balancer initialized for %s with %d instances", serviceName, len(serviceConfig.Instances))
+	LoadBalancer, err := NewLoadBalancer(config.ServiceRegistery)
+	if err != nil {
+		rateLimiter.close()
+		log.Fatalf("Failed to initiallize LoadBalancer: %v", err)
 	}
+	// for serviceName, serviceConfig := range config.Services {
+	// 	if len(serviceConfig.Instances) == 0 {
+	// 		log.Printf("Warning: No instances configured for service %s", serviceName)
+	// 		continue
+	// 	}
+
+	// 	lb := NewRoundRobin(serviceConfig.Instances, serviceConfig.HealthCheckInterval)
+	// 	loadBalancers[serviceName] = lb
+	// 	log.Printf("Load balancer initialized for %s with %d instances", serviceName, len(serviceConfig.Instances))
+	// }
 
 	grpcInvoker := NewGRPCInvoker()
 	log.Println("gRPC invoker initialized")
 
-	for serviceName, serviceConfig := range config.Services {
-		if serviceConfig.ProtosetPath == "" {
+	for serviceName, protofile := range config.ProtoFiles {
+		if protofile == "" {
 			log.Printf("Warning: No protoset path configured for service %s", serviceName)
 			continue
 		}
 
-		err := grpcInvoker.LoadProtoset(serviceConfig.ProtosetPath)
+		err := grpcInvoker.LoadProtoset(protofile)
 		if err != nil {
 			log.Printf("Warning: Failed to load protoset for service %s: %v", serviceName, err)
 		} else {
-			log.Printf("Successfully loaded protoset for %s from %s", serviceName, serviceConfig.ProtosetPath)
+			log.Printf("Successfully loaded protoset for %s from %s", serviceName, protofile)
 		}
 	}
 
@@ -69,13 +74,11 @@ func main() {
 	// 	log.Fatalf("Failed to create Redis pool: %v", err)
 	// }
 	redis := redis.NewClient(&redis.Options{Addr: config.Redis.RedisAddr})
-	handler := NewHandler(config, loadBalancers, grpcInvoker, rateLimiter, redis)
+	handler := NewHandler(config, LoadBalancer, grpcInvoker, rateLimiter, redis)
 	if handler == nil {
 		rateLimiter.close()
 		// grpcInvoker.close()
-		for _, lb := range loadBalancers {
-			lb.Close()
-		}
+		LoadBalancer.close()
 		redis.Close()
 		log.Fatal("Failed to create handler")
 	}
@@ -84,12 +87,19 @@ func main() {
 	server := NewServer(handler, config)
 	log.Printf("Starting API Gateway on %s:%s", config.Server.Host, config.Server.Port)
 
+	errChan := make(chan error, 1)
 	go func() {
-		log.Println(server.start())
+		if err := server.start(); err != nil && err != http.ErrServerClosed {
+			errChan <- err
+		}
 	}()
 
-	<-ctx.Done()
-
+	select {
+	case <-ctx.Done():
+		log.Println("ShutDown Signal received")
+	case err := <-errChan:
+		log.Println("Server Error: ", err.Error())
+	}
 	stop()
 
 	server.Close()
