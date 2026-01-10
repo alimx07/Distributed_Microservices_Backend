@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   redis_cluster_net:
     driver: bridge
@@ -13,6 +11,10 @@ networks:
   kafka-net:
     external: true
     name: kafka-net
+  etcd_net:
+    external: true
+    name: etcd_net
+
 
 services:
   post_service:
@@ -20,37 +22,22 @@ services:
       context: .
       dockerfile: Dockerfile
     image: post_service:1.0.0
-    container_name: post_service
-    environment:
-      - DB_HOST=postgres_primary
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=mypassword
-      - DB_NAME=postdb
-      - DB_REPLICA_HOST=postgres_secondary
-      - DB_REPLICA_PORT=5432
-      - DB_REPLICA_USER=postgres
-      - DB_REPLICA_PASSWORD=mypassword
-      - DB_REPLICA_NAME=postdb
-      - SERVER_HOST=0.0.0.0
-      - SERVER_HTTP_PORT=8080
-      - SERVER_PORT=50061
-      - CLUSTER_ADDR=redis-node-1:6379,redis-node-2:6379,redis-node-3:6379,redis-node-4:6379,redis-node-5:6379,redis-node-6:6379
-    ports:
-      - 50061:50061
+    env_file:
+      - service.env
     networks:
       - app_net
       - postgres_net
       - redis_cluster_net
       - common_net
+      - etcd_net
 
   kafka:
-    image: docker.io/bitnami/kafka:latest
+    image: bitnamilegacy/kafka:latest
     container_name: kafka
-    ports:
-      - 9094:9094
     volumes:
       - kafka_data:/bitnami
+    env_file:
+      - kafka.env
     environment:
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_BROKER_ID=1
@@ -80,20 +67,14 @@ services:
       - kafka
       - postgres_primary
     networks:
-      - app_net
       - kafka-net
       - postgres_net
 
   postgres_primary:
     image: postgres:17
     container_name: postgres_primary
-    ports:
-      - 13432:5432
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: postdb
-      POSTGRES_HOST: postgres
+    env_file:
+      - primary.env
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./primary_init:/docker-entrypoint-initdb.d
@@ -105,13 +86,10 @@ services:
   postgres_secondary:
     image: postgres:17
     container_name: postgres_secondary
-    ports:
-      - 13433:5432
+    env_file:
+      - replica.env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mypassword
       PGDATA: /var/lib/postgresql/data
-      PGPASSWORD: 12345
     volumes:
       - pgSec_data:/var/lib/postgresql/data
       - ./secondary_init:/docker-entrypoint-initdb.d
@@ -119,41 +97,29 @@ services:
       - post_service
     networks:
       - postgres_net
-
+    restart: on-failure:3
 
   redis-node-1: &redis-node-template
     image:  redis:7.2.11-alpine3.21
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
-    ports:
-      - 8001:6379
     networks:
       - redis_cluster_net
 
   redis-node-2:
     <<: *redis-node-template
-    ports:
-      - 8002:6379
 
   redis-node-3:
     <<: *redis-node-template
-    ports:
-      - 8003:6379
 
   redis-node-4:
     <<: *redis-node-template
-    ports:
-      - 8004:6379
   redis-node-5:
     <<: *redis-node-template
-    ports:
-      - 8005:6379
 
   redis-node-6:
     <<: *redis-node-template
-    ports:
-      - 8006:6379
 
   redis-cluster-creator:
     image: redis:7.2.11-alpine3.21

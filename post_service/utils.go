@@ -32,6 +32,8 @@ func LoadConfig() (models.Config, error) {
 		ServerHttpPort: os.Getenv("SERVER_HTTP_PORT"),
 		CachePassword:  os.Getenv("CACHE_PASSWORD"),
 		CacheAddrs:     strings.Split(os.Getenv("CLUSTER_ADDR"), ","),
+		EtcdEndpoints:  os.Getenv("ETCD_ENDPOINTS"),
+		HostName:       os.Getenv("HOSTNAME"),
 	}
 	return config, nil
 }

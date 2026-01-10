@@ -22,6 +22,9 @@ type Config struct {
 	ServerHost     string
 	ServerPort     string
 	ServerHttpPort string
+
+	EtcdEndpoints string
+	HostName      string
 }
 
 type Post struct {

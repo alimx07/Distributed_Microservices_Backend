@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -12,6 +14,8 @@ import (
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/models"
 	"github.com/alimx07/Distributed_Microservices_Backend/post_service/postRepo"
 	pb "github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go"
+	"github.com/google/uuid"
+	etcd "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,16 +23,22 @@ import (
 
 type postService struct {
 	pb.UnimplementedPostSeriveServer
+	ctx           context.Context
+	cancel        context.CancelFunc
 	presistanceDB postRepo.PersistenceDB
 	cache         cachedRepo.CachedRepo
 	config        models.Config
 	httpServer    *http.Server
 	grpcServer    *grpc.Server
 	serviceOFF    atomic.Bool
+	etcdClient    *etcd.Client
 }
 
 func NewPostService(presistance postRepo.PersistenceDB, cache cachedRepo.CachedRepo, config models.Config) *postService {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &postService{
+		ctx:           ctx,
+		cancel:        cancel,
 		presistanceDB: presistance,
 		cache:         cache,
 		config:        config,
@@ -45,6 +55,21 @@ func (ps *postService) start() error {
 	ps.grpcServer = grpcserver
 	pb.RegisterPostSeriveServer(grpcserver, ps)
 	// reflection.Register(grpcserver)
+
+	etcdClient, err := etcd.New(etcd.Config{Endpoints: strings.Split(ps.config.EtcdEndpoints, ","), DialTimeout: 5 * time.Second})
+	if err != nil {
+		log.Printf("Error in Register instance of PostService: %v", err)
+		return err
+	}
+	ps.etcdClient = etcdClient
+	lease, err := etcdClient.Grant(ps.ctx, 5)
+	if err != nil {
+		log.Printf("Error in Creating Lease to instance of PostService: %v", err)
+		return err
+	}
+	uuid := uuid.New()
+	etcdClient.Put(context.Background(), fmt.Sprintf("/services/post_service/%v", uuid), net.JoinHostPort(ps.config.HostName, ps.config.ServerPort), etcd.WithLease(lease.ID))
+	etcdClient.KeepAlive(ps.ctx, lease.ID)
 	return grpcserver.Serve(listener)
 }
 
@@ -207,6 +232,8 @@ func (ps *postService) StartHealthServer() error {
 
 func (ps *postService) close() {
 
+	ps.cancel()
+	ps.etcdClient.Close()
 	// mark service as OFF
 	ps.serviceOFF.Store(true)
 
