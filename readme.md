@@ -37,14 +37,14 @@ Work is in progress. Iterations will be pushed as the system evolves.
 - [Post Service](#post-service)
   - [CDC + Kafka + Outbox Pattern](#cdc--kafka--outbox-pattern)
 - [Feed Service](#feed-service)
-  - [Fanout on Write](#fan-out-on-Write)
-  - [Fanout on Read](#fan-out-on-Read)
+  - [Fan-out on Write](#1-fan-out-on-write)
+  - [Fan-out on Read](#2-fan-out-on-read)
 - [User Service](#user-service)
 - [Follow Service](#follow-service)
 
 ----------------------------------------------
 
-[Full Service Design](images/fullDesign.png)
+![Full Service Design](images/fullDesign.png)
 
 ## API Gateway
 
@@ -111,7 +111,7 @@ Example rules:
 
 There are several algorithms for enforcing rate limits. One common approach is the **Token Bucket** algorithm.
 
-[Token bucket algorithm](images/TokenBucket.png)
+![Token bucket algorithm](images/TokenBucket.png)
 
 #### Token Bucket 
 
