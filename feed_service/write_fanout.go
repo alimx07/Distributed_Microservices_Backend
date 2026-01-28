@@ -5,12 +5,19 @@ import (
 	"encoding/json"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	cachedrepo "github.com/alimx07/Distributed_Microservices_Backend/feed_service/cachedRepo"
 	"github.com/alimx07/Distributed_Microservices_Backend/feed_service/models"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
+
+// FollowClientInterface defines the interface for follow client operations
+type FollowClientInterface interface {
+	GetFollowers(ctx context.Context, id string) ([]string, error)
+	IsCeleb(ctx context.Context, id string) (bool, error)
+}
 
 // The consumer will be the responsable
 // about fanout on write, as it will read from topics
@@ -19,12 +26,12 @@ type FanoutWriter struct {
 	c               *kafka.Consumer
 	ctx             context.Context
 	cache           cachedrepo.Cache
-	followClient    *FollowClient
+	followClient    FollowClientInterface
 	wg              *sync.WaitGroup
 	workerThreshold int
 }
 
-func NewFanoutWriter(ctx context.Context, config models.KafkaConfig, cache cachedrepo.Cache, fc *FollowClient, workerThreshold int) (*FanoutWriter, error) {
+func NewFanoutWriter(ctx context.Context, config models.KafkaConfig, cache cachedrepo.Cache, fc FollowClientInterface, workerThreshold int) (*FanoutWriter, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": config.BootStrapServers,
 		"group.id":          config.GroupID,
@@ -95,7 +102,7 @@ func (fw *FanoutWriter) ProcessMessage(msg *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	log.Println("POSTID --> ", item.PostId)
+	// log.Println("POSTID --> ", item.PostId)
 	ctx, c1 := context.WithTimeout(fw.ctx, 5*time.Second)
 	defer c1()
 	celeb, _ := fw.followClient.IsCeleb(ctx, item.UserId)
@@ -109,10 +116,11 @@ func (fw *FanoutWriter) ProcessMessage(msg *kafka.Message) error {
 	if err != nil {
 		return err
 	}
+	i := int32(0)
 	var wg sync.WaitGroup
-	i := 0
-	for {
+	for int(atomic.LoadInt32(&i)) < len(followers) {
 		wg.Add(1)
+		endIdx := min(int(atomic.LoadInt32(&i))+fw.workerThreshold, len(followers))
 		go func(ids []string) {
 			defer wg.Done()
 			for _, id := range ids {
@@ -122,11 +130,8 @@ func (fw *FanoutWriter) ProcessMessage(msg *kafka.Message) error {
 					Created_at: item.Created_at,
 				})
 			}
-		}(followers[i*fw.workerThreshold : min((i+1)*fw.workerThreshold, len(followers))])
-		i += fw.workerThreshold
-		if i > len(followers) {
-			break
-		}
+		}(followers[i:endIdx])
+		atomic.AddInt32(&i, int32(fw.workerThreshold))
 	}
 	wg.Wait()
 	return nil
