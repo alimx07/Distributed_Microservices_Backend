@@ -3,14 +3,13 @@ package models
 import "time"
 
 type AppConfig struct {
-	Server           ServerConfig       `yaml:"server"`
-	RateLimiting     RateLimitingConfig `yaml:"rate_limiting"`
-	Redis            RedisConfig        `yaml:"redis_config"`
-	ServiceRegistery RegisteryConfig    `yaml:"service_registery"`
-	ProtoFiles       map[string]string  `yaml:"protoset_files"`
-	// Services     map[string]ServiceConfig `yaml:"services"`
-	Routes    []RouteConfig `yaml:"routes"`
-	PublicKey []byte
+	Server           ServerConfig            `yaml:"server"`
+	RateLimiting     RateLimitingConfig      `yaml:"rate_limiting"`
+	Redis            RedisConfig             `yaml:"redis_config"`
+	ServiceRegistery RegisteryConfig         `yaml:"service_registery"`
+	ProtoFiles       map[string]string       `yaml:"protoset_files"`
+	RouteOptions     map[string]*RouteOption `yaml:"route_options"`
+	PublicKey        []byte
 }
 
 type ServerConfig struct {
@@ -45,14 +44,20 @@ type RegisteryConfig struct {
 	ServiceRegisteryPath   string `yaml:"service_registery_path"`
 	ServiceRegisteryPrefix string `yaml:"service_registery_prefix"`
 }
+
+type RouteOption struct {
+	RequireAuth      bool `yaml:"require_auth"`
+	RateLimitEnabled bool `yaml:"rate_limit_enabled"`
+}
+
 type RouteConfig struct {
-	Path             string `yaml:"path"`
-	Method           string `yaml:"method"`
-	Service          string `yaml:"service"`
-	GRPCService      string `yaml:"grpc_service"`
-	GRPCMethod       string `yaml:"grpc_method"`
-	RequireAuth      bool   `yaml:"require_auth"`
-	RateLimitEnabled bool   `yaml:"rate_limit_enabled"`
+	Path             string
+	Method           string
+	Body             string
+	GRPCService      string
+	GRPCMethod       string
+	RequireAuth      bool
+	RateLimitEnabled bool
 }
 
 type User struct {

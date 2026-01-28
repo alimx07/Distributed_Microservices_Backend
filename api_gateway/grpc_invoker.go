@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
+	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
+	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -15,9 +18,12 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
+// GRPCInvoker handles dynamic gRPC invocation and HTTP route mapping
 type GRPCInvoker struct {
 	serviceDescriptors map[string]*ServiceDescriptor
 	files              map[string]protoreflect.FileDescriptor
+	httpRoutes         map[string]map[string]*models.RouteConfig // method -> path pattern -> RouteConfig
+	routeOptions       map[string]*models.RouteOption
 }
 
 type ServiceDescriptor struct {
@@ -32,16 +38,17 @@ type MethodDescriptor struct {
 	fullMethodName   string
 }
 
-func NewGRPCInvoker() *GRPCInvoker {
+func NewGRPCInvoker(routeOptions map[string]*models.RouteOption) *GRPCInvoker {
 	return &GRPCInvoker{
 		serviceDescriptors: make(map[string]*ServiceDescriptor),
 		files:              make(map[string]protoreflect.FileDescriptor),
+		httpRoutes:         make(map[string]map[string]*models.RouteConfig),
+		routeOptions:       routeOptions,
 	}
 }
 
-// LoadProtoset loads service definitions from protoset files
-func (g *GRPCInvoker) LoadProtoset(protosetPath string) error {
-
+// LoadProtoset loads service definitions and HTTP annotations from protoset files
+func (g *GRPCInvoker) LoadProtoset(protosetPath, serviceName string) error {
 	data, err := os.ReadFile(protosetPath)
 	if err != nil {
 		return fmt.Errorf("failed to read protoset file %s: %w", protosetPath, err)
@@ -52,67 +59,142 @@ func (g *GRPCInvoker) LoadProtoset(protosetPath string) error {
 		return fmt.Errorf("failed to unmarshal protoset: %w", err)
 	}
 
-	files := &fakeFiles{
-		filesByPath: make(map[string]protoreflect.FileDescriptor),
-	}
+	resolver := &fileResolver{filesByPath: make(map[string]protoreflect.FileDescriptor)}
 
 	for _, fdProto := range fds.File {
-
-		fd, err := protodesc.NewFile(fdProto, files)
+		fd, err := protodesc.NewFile(fdProto, resolver)
 		if err != nil {
-			log.Printf("failed to create file descriptor for %s: %w", fdProto.GetName(), err)
+			log.Printf("Skipping file %s: %v", fdProto.GetName(), err)
 			continue
 		}
 
-		files.filesByPath[fd.Path()] = fd
+		resolver.filesByPath[fd.Path()] = fd
 		g.files[fd.Path()] = fd
 
-		services := fd.Services()
-		for i := 0; i < services.Len(); i++ {
-			svc := services.Get(i)
-			if err := g.registerService(svc); err != nil {
-				log.Printf("Warning: failed to register service %s: %v", svc.FullName(), err)
-			}
+		// Process each service in the file
+		for i := 0; i < fd.Services().Len(); i++ {
+			svc := fd.Services().Get(i)
+			g.registerService(svc)
+			g.registerHttpRoutes(fdProto, svc, serviceName)
 		}
 	}
 
-	log.Printf("Successfully loaded protoset from %s", protosetPath)
+	log.Printf("Loaded protoset: %s", protosetPath)
 	return nil
 }
 
-func (g *GRPCInvoker) registerService(svc protoreflect.ServiceDescriptor) error {
-	serviceName := string(svc.FullName())
+// registerService registers gRPC service methods for invocation
+func (g *GRPCInvoker) registerService(svc protoreflect.ServiceDescriptor) {
+	grpcServiceName := string(svc.FullName())
 
 	sd := &ServiceDescriptor{
-		serviceName: serviceName,
+		serviceName: grpcServiceName,
 		methods:     make(map[string]*MethodDescriptor),
 	}
 
-	methods := svc.Methods()
-	for j := 0; j < methods.Len(); j++ {
-		method := methods.Get(j)
+	for i := 0; i < svc.Methods().Len(); i++ {
+		method := svc.Methods().Get(i)
 		methodName := string(method.Name())
 
-		inputMsg := method.Input()
-		outputMsg := method.Output()
-
-		md := &MethodDescriptor{
+		sd.methods[methodName] = &MethodDescriptor{
 			methodName:       methodName,
-			inputDescriptor:  inputMsg,
-			outputDescriptor: outputMsg,
-			fullMethodName:   fmt.Sprintf("/%s/%s", serviceName, methodName),
+			inputDescriptor:  method.Input(),
+			outputDescriptor: method.Output(),
+			fullMethodName:   fmt.Sprintf("/%s/%s", grpcServiceName, methodName),
 		}
-
-		sd.methods[methodName] = md
-		log.Printf("Registered method: %s", md.fullMethodName)
+		log.Printf("Registered gRPC method: /%s/%s", grpcServiceName, methodName)
 	}
 
-	g.serviceDescriptors[serviceName] = sd
+	g.serviceDescriptors[grpcServiceName] = sd
+}
+
+// registerHttpRoutes parses google.api.http annotations and registers HTTP routes
+func (g *GRPCInvoker) registerHttpRoutes(fdProto *descriptorpb.FileDescriptorProto, svc protoreflect.ServiceDescriptor, serviceName string) {
+	grpcServiceName := string(svc.FullName())
+	simpleServiceName := string(svc.Name())
+
+	for _, svcProto := range fdProto.GetService() {
+		if svcProto.GetName() != simpleServiceName {
+			continue
+		}
+
+		for _, methodProto := range svcProto.GetMethod() {
+			opts := methodProto.GetOptions()
+			if opts == nil {
+				continue
+			}
+
+			// Use typed API to extract google.api.http annotation
+			httpRule := g.getHttpRule(opts)
+			if httpRule == nil {
+				continue
+			}
+
+			httpMethod, httpPath := extractMethodAndPath(httpRule)
+			if httpMethod == "" || httpPath == "" {
+				continue
+			}
+
+			route := &models.RouteConfig{
+				Path:   httpPath,
+				Method: httpMethod,
+				Body:   httpRule.Body,
+				// Service:     serviceName,
+				GRPCService: grpcServiceName,
+				GRPCMethod:  methodProto.GetName(),
+			}
+
+			if g.httpRoutes[httpMethod] == nil {
+				g.httpRoutes[httpMethod] = make(map[string]*models.RouteConfig)
+			}
+			if val, ok := g.routeOptions[route.Path]; ok {
+				route.RateLimitEnabled = val.RateLimitEnabled
+				route.RequireAuth = val.RequireAuth
+			}
+			g.httpRoutes[httpMethod][httpPath] = route
+
+			log.Printf("Registered HTTP route: %s %s -> %s/%s", httpMethod, httpPath, grpcServiceName, methodProto.GetName())
+		}
+	}
+}
+
+// getHttpRule extracts the google.api.http annotation using the typed extension API
+func (g *GRPCInvoker) getHttpRule(opts *descriptorpb.MethodOptions) *annotations.HttpRule {
+	if !proto.HasExtension(opts, annotations.E_Http) {
+		return nil
+	}
+
+	ext := proto.GetExtension(opts, annotations.E_Http)
+	if httpRule, ok := ext.(*annotations.HttpRule); ok {
+		return httpRule
+	}
 	return nil
 }
 
-func (g *GRPCInvoker) Invoke(ctx context.Context, conn *grpc.ClientConn, serviceName string, methodName string, requestJSON []byte) ([]byte, error) {
+// extractMethodAndPath extracts HTTP method and path from HttpRule
+func extractMethodAndPath(rule *annotations.HttpRule) (method, path string) {
+	switch pattern := rule.GetPattern().(type) {
+	case *annotations.HttpRule_Get:
+		return "GET", pattern.Get
+	case *annotations.HttpRule_Post:
+		return "POST", pattern.Post
+	case *annotations.HttpRule_Delete:
+		return "DELETE", pattern.Delete
+	case *annotations.HttpRule_Put:
+		return "PUT", pattern.Put
+	case *annotations.HttpRule_Patch:
+		return "PATCH", pattern.Patch
+	}
+	return "", ""
+}
 
+// GetHttpRoutes returns all parsed HTTP routes
+func (g *GRPCInvoker) GetHttpRoutes() map[string]map[string]*models.RouteConfig {
+	return g.httpRoutes
+}
+
+// Invoke calls a gRPC method dynamically
+func (g *GRPCInvoker) Invoke(ctx context.Context, conn *grpc.ClientConn, serviceName, methodName string, requestJSON []byte) ([]byte, error) {
 	sd, exists := g.serviceDescriptors[serviceName]
 	if !exists {
 		return nil, fmt.Errorf("service %s not found", serviceName)
@@ -123,84 +205,71 @@ func (g *GRPCInvoker) Invoke(ctx context.Context, conn *grpc.ClientConn, service
 		return nil, fmt.Errorf("method %s not found in service %s", methodName, serviceName)
 	}
 
+	// Create request message and unmarshal JSON
 	reqMsg := dynamicpb.NewMessage(md.inputDescriptor)
-
-	unmarshaler := protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}
-	log.Println("Message: ", reqMsg.String())
+	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err := unmarshaler.Unmarshal(requestJSON, reqMsg); err != nil {
-		log.Println("MARSHAL PROBLEM IN GRPC INVOKER: ", reqMsg.String())
-		log.Println(err.Error())
+		log.Printf("Failed to unmarshal request for %s: %v", md.fullMethodName, err)
 		return nil, fmt.Errorf("failed to unmarshal request: %w", err)
 	}
 
+	// Create response message and invoke
 	respMsg := dynamicpb.NewMessage(md.outputDescriptor)
-
-	// Invoke the method
-	err := conn.Invoke(ctx, md.fullMethodName, reqMsg, respMsg)
-	if err != nil {
-		log.Println(err.Error())
+	if err := conn.Invoke(ctx, md.fullMethodName, reqMsg, respMsg); err != nil {
+		log.Printf("gRPC call failed for %s: %v", md.fullMethodName, err)
 		return nil, fmt.Errorf("failed to invoke gRPC method: %w", err)
 	}
 
 	// Marshal response to JSON
-	marshaler := protojson.MarshalOptions{
-		UseProtoNames:   true,
-		EmitUnpopulated: false,
-	}
+	marshaler := protojson.MarshalOptions{UseProtoNames: true}
 	responseJSON, err := marshaler.Marshal(respMsg)
 	if err != nil {
-		log.Println(err.Error())
 		return nil, fmt.Errorf("failed to marshal response: %w", err)
 	}
 
 	return responseJSON, nil
 }
 
-type fakeFiles struct {
+// MatchPath checks if a request path matches a route pattern with path parameters
+func MatchPath(pattern, path string) bool {
+	patternParts := strings.Split(strings.Trim(pattern, "/"), "/")
+	pathParts := strings.Split(strings.Trim(path, "/"), "/")
+
+	if len(patternParts) != len(pathParts) {
+		return false
+	}
+
+	for i, pp := range patternParts {
+		if strings.HasPrefix(pp, "{") && strings.HasSuffix(pp, "}") {
+			continue // Path parameter matches anything
+		}
+		if pp != pathParts[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// fileResolver implements protodesc.Resolver for building file descriptors
+type fileResolver struct {
 	filesByPath map[string]protoreflect.FileDescriptor
 }
 
-func (f *fakeFiles) FindFileByPath(path string) (protoreflect.FileDescriptor, error) {
-	if fd, ok := f.filesByPath[path]; ok {
+func (r *fileResolver) FindFileByPath(path string) (protoreflect.FileDescriptor, error) {
+	if fd, ok := r.filesByPath[path]; ok {
 		return fd, nil
 	}
 	return nil, fmt.Errorf("file not found: %s", path)
 }
 
-func (f *fakeFiles) FindDescriptorByName(name protoreflect.FullName) (protoreflect.Descriptor, error) {
-
-	for _, fd := range f.filesByPath {
-		// Try to find in messages
+func (r *fileResolver) FindDescriptorByName(name protoreflect.FullName) (protoreflect.Descriptor, error) {
+	for _, fd := range r.filesByPath {
 		if desc := fd.Messages().ByName(protoreflect.Name(name)); desc != nil {
 			return desc, nil
 		}
-		// Try to find in services
 		if desc := fd.Services().ByName(protoreflect.Name(name)); desc != nil {
 			return desc, nil
 		}
 	}
 	return nil, fmt.Errorf("descriptor not found: %s", name)
 }
-
-func (f *fakeFiles) RangeFiles(fn func(protoreflect.FileDescriptor) bool) {
-	for _, fd := range f.filesByPath {
-		if !fn(fd) {
-			return
-		}
-	}
-}
-
-func (f *fakeFiles) NumFiles() int {
-	return len(f.filesByPath)
-}
-
-func (f *fakeFiles) RegisterFile(fd protoreflect.FileDescriptor) error {
-	f.filesByPath[fd.Path()] = fd
-	return nil
-}
-
-// func (g *GRPCInvoker) close() {
-
-// }

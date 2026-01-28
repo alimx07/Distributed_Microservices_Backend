@@ -29,162 +29,75 @@ protoset_files:
 
 service_registery: 
     service_registery_path : http://etcd:2379
-    preservice_registery_prefix: /services/
-# services:
-#   user_service:
-#     health_check_interval: 5s
-#     protoset_path: "_proto/user.protoset"
-  
-#   post_service:
-#     health_check_interval: 5s
-#     protoset_path: "_proto/post.protoset"
-  
-#   follow_service:
-#     health_check_interval: 5s
-#     protoset_path: "_proto/follow.protoset"
-  
-#   feed_service:
-#     health_check_interval: 5s
-#     protoset_path: "_proto/feed.protoset"
+    service_registery_prefix: /services/
 
-# HTTP to gRPC routing configuration
-routes:
+
+# Default is true , true
+route_options:
   # User Service Routes
-  - path: "/api/v1/register"
-    method: "POST"
-    service: "user_service"
-    grpc_service: "UserService"
-    grpc_method: "Register"
+  "/api/v1/register":
     require_auth: false
     rate_limit_enabled: true
     
-  - path: "/api/v1/login"
-    method: "POST"
-    service: "user_service"
-    grpc_service: "UserService"
-    grpc_method: "Login"
+  "/api/v1/login":
     require_auth: false
     rate_limit_enabled: true
     
-  - path: "/api/v1/logout"
-    method: "POST"
-    service: "user_service"
-    grpc_service: "UserService"
-    grpc_method: "Logout"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/logout":
+  #   require_auth: true
+  #   rate_limit_enabled: true
     
-  - path: "/api/v1/refresh"
-    method: "POST"
-    service: "user_service"
-    grpc_service: "UserService"
-    grpc_method: "Refresh"
+  "/api/v1/refresh":
     require_auth: false
     rate_limit_enabled: true
     
-  - path: "/api/v1/users"
-    method: "GET"
-    service: "user_service"
-    grpc_service: "UserService"
-    grpc_method: "GetUsersData"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/users":
+  #   require_auth: true
+  #   rate_limit_enabled: true
   
   # Post Service Routes
-  - path: "/api/v1/posts/post"
-    method: "POST"
-    service: "post_service"
-    grpc_service: "PostSerive"
-    grpc_method: "CreatePost"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/posts/post":
+  #   require_auth: true
+  #   rate_limit_enabled: true
     
-  - path: "/api/v1/posts"
-    method: "GET"
-    service: "post_service"
-    grpc_service: "PostSerive"
-    grpc_method: "GetPosts"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/posts":
+  #   require_auth: true
+  #   rate_limit_enabled: true
     
-  - path: "/api/v1/posts/{PostId}"
-    method: "DELETE"
-    service: "post_service"
-    grpc_service: "PostSerive"
-    grpc_method: "DeletePost"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/posts/{PostId}":
+  #   require_auth: true
+  #   rate_limit_enabled: true
     
-  - path: "/api/v1/comments"
-    method: "POST"
-    service: "post_service"
-    grpc_service: "PostSerive"
-    grpc_method: "CreateComment"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/comments":
+  #   require_auth: true
+  #   rate_limit_enabled: true
     
-  - path: "/api/v1/comments/{CommentId}"
-    method: "DELETE"
-    service: "post_service"
-    grpc_service: "PostSerive"
-    grpc_method: "DeleteComment"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/comments/{CommentId}":
+  #   require_auth: true
+  #   rate_limit_enabled: true
     
-  - path: "/api/v1/likes/{PostId}"
-    method: "POST"
-    service: "post_service"
-    grpc_service: "PostSerive"
-    grpc_method: "CreateLike"
-    require_auth: true
-    rate_limit_enabled: true
-    
-  - path: "/api/v1/likes/{PostId}"
-    method: "DELETE"
-    service: "post_service"
-    grpc_service: "PostSerive"
-    grpc_method: "DeleteLike"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/likes/{PostId}":
+  #   require_auth: true
+  #   rate_limit_enabled: true
   
   # Follow Service Routes
-  - path: "/api/v1/followers/{UserId}"
-    method: "GET"
-    service: "follow_service"
-    grpc_service: "FollowService"
-    grpc_method: "GetFollowers"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/followers/{UserId}":
+  #   require_auth: true
+  #   rate_limit_enabled: true
     
-  - path: "/api/v1/following/{UserId}"
-    method: "GET"
-    service: "follow_service"
-    grpc_service: "FollowService"
-    grpc_method: "GetCeleb"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/following/{UserId}":
+  #   require_auth: true
+  #   rate_limit_enabled: true
 
-  - path: "/api/v1/follow/{FolloweeId}"
-    method: "POST"
-    service: "follow_service"
-    grpc_service: "FollowService"
-    grpc_method: "CreateFollow"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/isceleb/{UserId}":
+  #   require_auth: true
+  #   rate_limit_enabled: true
 
-  - path: "/api/v1/follow/{FolloweeId}"
-    method: "DELETE"
-    service: "follow_service"
-    grpc_service: "FollowService"
-    grpc_method: "DeleteFollow"
-    require_auth: true
-    rate_limit_enabled: true
+  # "/api/v1/follow/{FolloweeId}":
+  #   require_auth: true
+  #   rate_limit_enabled: true
     
-  # Feed Service Routes
-  - path: "/api/v1/feed"
-    method: "GET"
-    service: "feed_service"
-    grpc_service: "FeedService"
-    grpc_method: "GetFeed"
-    require_auth: true
-    rate_limit_enabled: true
+  # # Feed Service Routes
+  # "/api/v1/feed":
+  #   require_auth: true
+  #   rate_limit_enabled: true

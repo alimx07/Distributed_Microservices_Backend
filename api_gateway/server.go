@@ -43,15 +43,17 @@ func (s *Server) start() error {
 	return httpServer.ListenAndServe()
 }
 
-// Add routes dynamically from configuration
 func (s *Server) addRoutes() {
-	// Register all routes from config
-	for _, route := range s.config.Routes {
-		pattern := route.Method + " " + route.Path
-		s.router.HandleFunc(pattern, s.handler.GenericHandler)
+	// Get routes from handler's route map (built from google.api.http annotations)
+	routeMap := s.handler.GetRouteMap()
+	for method, routes := range routeMap {
+		for path, route := range routes {
+			pattern := method + " " + path
+			s.router.HandleFunc(pattern, s.handler.GenericHandler)
 
-		log.Printf("Registered route: %s %s -> %s.%s",
-			route.Method, route.Path, route.GRPCService, route.GRPCMethod)
+			log.Printf("Registered route: %s %s -> %s.%s",
+				method, path, route.GRPCService, route.GRPCMethod)
+		}
 	}
 	// Health check endpoint
 	s.router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

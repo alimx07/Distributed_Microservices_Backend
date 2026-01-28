@@ -38,5 +38,10 @@ local ttl = 3 * (limit/refillrate)
 redis.call("hset" , key , "tokens" , new_tokens , "last_refill" , now)
 redis.call("expire" , key , ttl)
 
+-- Return array with: [allowed (1/0), remaining_tokens, limit, retry_after_seconds]
+local retry_after = 0
+if not allowed and refillrate > 0 then
+    retry_after = math.ceil(1 / refillrate)
+end
 
-return allowed
+return {allowed and 1 or 0, math.floor(new_tokens), limit, retry_after}

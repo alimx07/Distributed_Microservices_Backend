@@ -48,7 +48,7 @@ func main() {
 	// 	log.Printf("Load balancer initialized for %s with %d instances", serviceName, len(serviceConfig.Instances))
 	// }
 
-	grpcInvoker := NewGRPCInvoker()
+	grpcInvoker := NewGRPCInvoker(config.RouteOptions)
 	log.Println("gRPC invoker initialized")
 
 	for serviceName, protofile := range config.ProtoFiles {
@@ -57,7 +57,7 @@ func main() {
 			continue
 		}
 
-		err := grpcInvoker.LoadProtoset(protofile)
+		err := grpcInvoker.LoadProtoset(protofile, serviceName)
 		if err != nil {
 			log.Printf("Warning: Failed to load protoset for service %s: %v", serviceName, err)
 		} else {

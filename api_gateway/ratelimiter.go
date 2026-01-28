@@ -31,6 +31,13 @@ type Rule struct {
 	RefillRate int `json:"refillRate"` // requests/s
 }
 
+type RateLimitInfo struct {
+	Allowed           bool
+	Remaining         int
+	Limit             int
+	RetryAfterSeconds int
+}
+
 func NewRateLimiter(config models.RateLimitingConfig) (*RateLimiter, error) {
 	c := redis.NewClusterClient(&redis.ClusterOptions{
 		Addrs:    config.Addr,
@@ -51,46 +58,57 @@ func NewRateLimiter(config models.RateLimitingConfig) (*RateLimiter, error) {
 	return &RateLimiter{ctx: ctx, rules: rules, redisCluster: c, script: config.RateLimitingScript}, nil
 }
 
-func (rl *RateLimiter) AllowIP(r *http.Request) (bool, error) {
+func (rl *RateLimiter) AllowIP(r *http.Request) (*RateLimitInfo, error) {
 	id := ipExtractor(r)
 	// log.Println("IP ID", id)
 	return rl.Allow(id, rl.rules["IP"])
 }
 
-func (rl *RateLimiter) AllowRules(r *http.Request) (bool, error) {
+func (rl *RateLimiter) AllowRules(r *http.Request) (*RateLimitInfo, error) {
 	userID := userIdExtractor(r)
+	var mostRestrictive *RateLimitInfo
 	for ruleName, rule := range rl.rules {
-		if ruleName == "IP" {
-			continue
-		}
+		// if ruleName == "IP" {
+		// 	continue
+		// }
 		// for now i have just two rules (Per IP , per UserID)
 		// More custom rules (ex: per URL) can be added
 		// just add different rules with name as the URL
 		// and we can match them efficiently using data structure like trie
 		// matched := matchRule(r , rule.Name)
-		ok, err := rl.Allow(userID+ruleName, rule)
-		if err != nil && !ok {
-			return ok, err
+		info, err := rl.Allow(userID+ruleName, rule)
+		if err != nil {
+			return info, err
+		}
+		if !info.Allowed {
+			return info, nil
+		}
+		// Keep track of most restrictive limits
+		if mostRestrictive == nil || info.Remaining < mostRestrictive.Remaining {
+			mostRestrictive = info
 		}
 	}
-	return true, nil
+	if mostRestrictive == nil {
+		return &RateLimitInfo{Allowed: true}, nil
+	}
+	return mostRestrictive, nil
 }
 
-func (rl *RateLimiter) Allow(id string, rule Rule) (bool, error) {
+func (rl *RateLimiter) Allow(id string, rule Rule) (*RateLimitInfo, error) {
 
 	keys := []string{id}
 	args := []interface{}{rule.RefillRate, rule.Limit, time.Now().Unix()}
-	ok, err := rl.checkRedis(keys, args)
-	// log.Printf("REDIS RL: %v %v", ok, err)
-	if err != nil && !ok {
-		return false, err
+	info, err := rl.checkRedis(keys, args)
+	// log.Printf("REDIS RL: %v %v", info, err)
+	if err != nil {
+		return info, err
 	}
 
-	return true, nil
+	return info, nil
 }
 
 // Check redis atomically using lua script
-func (rl *RateLimiter) checkRedis(keys []string, args []interface{}) (bool, error) {
+func (rl *RateLimiter) checkRedis(keys []string, args []interface{}) (*RateLimitInfo, error) {
 
 	res, err := rl.redisCluster.Eval(rl.ctx, rl.script, keys, args).Result()
 
@@ -100,12 +118,48 @@ func (rl *RateLimiter) checkRedis(keys []string, args []interface{}) (bool, erro
 	// lets fail-Open
 	if err != nil {
 		log.Printf("There is error in redis connection: %v", err.Error())
-		return true, err
+		return &RateLimitInfo{Allowed: true}, err
 	}
+
+	// Parse result array: [allowed, remaining, limit, retry_after]
+	if resultArray, ok := res.([]interface{}); ok && len(resultArray) >= 4 {
+		allowed := false
+		if allowedVal, ok := resultArray[0].(int64); ok {
+			allowed = allowedVal == 1
+		}
+
+		remaining := 0
+		if remainingVal, ok := resultArray[1].(int64); ok {
+			remaining = int(remainingVal)
+		}
+
+		limit := 0
+		if limitVal, ok := resultArray[2].(int64); ok {
+			limit = int(limitVal)
+		}
+
+		retryAfter := 0
+		if retryAfterVal, ok := resultArray[3].(int64); ok {
+			retryAfter = int(retryAfterVal)
+		}
+
+		return &RateLimitInfo{
+			Allowed:           allowed,
+			Remaining:         remaining,
+			Limit:             limit,
+			RetryAfterSeconds: retryAfter,
+		}, nil
+	}
+
+	// Fallback for old format or unexpected result
 	if v, ok := res.(int64); ok {
-		return v == 1, nil
+		return &RateLimitInfo{
+			Allowed:   v == 1,
+			Remaining: 0,
+			Limit:     0,
+		}, nil
 	}
-	return true, nil
+	return &RateLimitInfo{Allowed: true}, nil
 }
 
 func ipExtractor(r *http.Request) string {

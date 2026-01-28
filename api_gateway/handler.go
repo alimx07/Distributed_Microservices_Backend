@@ -51,13 +51,25 @@ func NewHandler(config *models.AppConfig, loadBalancer *LoadBalancer, grpcInvoke
 		log.Println("Error in Loading the public key")
 		return nil
 	}
-	// Build route map for fast lookup
-	for i := range config.Routes {
-		route := &config.Routes[i]
-		if h.routeMap[route.Method] == nil {
-			h.routeMap[route.Method] = make(map[string]*models.RouteConfig)
+
+	// Build route map from google.api.http annotations parsed by grpcInvoker
+	httpRoutes := grpcInvoker.GetHttpRoutes()
+	for method, routes := range httpRoutes {
+		if h.routeMap[method] == nil {
+			h.routeMap[method] = make(map[string]*models.RouteConfig)
 		}
-		h.routeMap[route.Method][route.Path] = route
+		for path, route := range routes {
+			// Apply route options from config if available
+			if config.RouteOptions != nil {
+				if opts, ok := config.RouteOptions[path]; ok {
+					route.RequireAuth = opts.RequireAuth
+					route.RateLimitEnabled = opts.RateLimitEnabled
+				}
+			}
+			h.routeMap[method][path] = route
+			log.Printf("Registered route: %s %s -> %s/%s (auth=%v, rate_limit=%v)",
+				method, path, route.GRPCService, route.GRPCMethod, route.RequireAuth, route.RateLimitEnabled)
+		}
 	}
 
 	return h
@@ -89,13 +101,26 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Apply rate limiting if enabled
 	if route.RateLimitEnabled {
-		allowed, err := h.rateLimiter.AllowIP(r)
+		rateLimitInfo, err := h.rateLimiter.AllowIP(r)
 		if err != nil {
 			log.Printf("Rate limiter error: %v", err)
 			// Fail open
-		} else if !allowed {
-			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
-			return
+		} else {
+			// Add rate limiting headers
+			if rateLimitInfo == nil {
+				return
+			}
+
+			w.Header().Set("X-Ratelimit-Remaining", fmt.Sprintf("%d", rateLimitInfo.Remaining))
+			w.Header().Set("X-Ratelimit-Limit", fmt.Sprintf("%d", rateLimitInfo.Limit))
+
+			if !rateLimitInfo.Allowed {
+				http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+				if rateLimitInfo.RetryAfterSeconds > 0 {
+					w.Header().Set("X-Ratelimit-Retry-After", fmt.Sprintf("%d", rateLimitInfo.RetryAfterSeconds))
+				}
+				return
+			}
 		}
 	}
 
@@ -111,9 +136,12 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("Rate limiter error: %v", err)
 			// Fail open
-		} else if !allowed {
-			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
-			return
+		} else {
+
+			if !allowed.Allowed {
+				http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+				return
+			}
 		}
 	}
 
@@ -131,7 +159,7 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lb, exists := h.loadBalancer.Balancers[route.Service]
+	lb, exists := h.loadBalancer.Balancers[route.GRPCService]
 	if !exists {
 		http.Error(w, "Service not available", http.StatusServiceUnavailable)
 		return
@@ -215,52 +243,24 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 
 // findRoute finds the matching route configuration
 func (h *Handler) findRoute(method, path string) *models.RouteConfig {
-
-	// In Case of wrong Method required
-	_, exists := h.routeMap[method]
+	routes, exists := h.routeMap[method]
 	if !exists {
 		return nil
 	}
 
 	// First try exact match
-	// If found
-	if route, exists := h.routeMap[method][path]; exists {
+	if route, exists := routes[path]; exists {
 		return route
 	}
 
 	// Try pattern matching for paths with parameters
-	for routePath, route := range h.routeMap[method] {
-		if h.matchPath(routePath, path) {
+	for routePath, route := range routes {
+		if MatchPath(routePath, path) {
 			return route
 		}
 	}
 
 	return nil
-}
-
-// matchPath checks if a request path matches a route pattern
-// TODO:
-// --> Use Trie for faster match
-func (h *Handler) matchPath(pattern, path string) bool {
-	patternParts := strings.Split(pattern, "/")
-	pathParts := strings.Split(path, "/")
-
-	// like in case
-	// api/v1/register != api/v1/followers/{userId}
-	if len(patternParts) != len(pathParts) {
-		return false
-	}
-
-	for i := range patternParts {
-		if strings.HasPrefix(patternParts[i], "{") && strings.HasSuffix(patternParts[i], "}") {
-			continue
-		}
-		if patternParts[i] != pathParts[i] {
-			return false
-		}
-	}
-
-	return true
 }
 
 // buildRequestData builds the gRPC request from HTTP request
@@ -372,4 +372,9 @@ func (h *Handler) close() {
 	h.rateLimiter.close()
 	h.loadBalancer.close()
 	h.redis.Close()
+}
+
+// GetRouteMap returns the route map for server registration
+func (h *Handler) GetRouteMap() map[string]map[string]*models.RouteConfig {
+	return h.routeMap
 }
