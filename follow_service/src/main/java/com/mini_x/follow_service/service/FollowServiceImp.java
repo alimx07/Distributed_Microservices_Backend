@@ -49,6 +49,10 @@ public class FollowServiceImp implements FollowService {
         return following;
     }
 
+//  TODO
+//  ADD binary Column is_celeb as this will remove all reduantant queries on followers numbers to indicate celebs
+// -Change Code Logic
+
     @Override
     @Transactional(value = "secondaryTransactionManager", readOnly = true)
     public boolean isCeleb(String userId) {
