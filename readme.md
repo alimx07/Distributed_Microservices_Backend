@@ -733,7 +733,7 @@ This strategy means that when the feed service consumes a `(post_id, user_id , t
 - Feed service splits the follower list into batches.
 - Workers process these batches in parallel and push `(X123 , 25411)` into each follower’s feed cache.
 
-[FanoutOnWrite](images/FanoutOnWrite.png)
+![FanoutOnWrite](images/FanoutOnWrite.png)
 
 This strategy works well for “normal users” because the fan-out volume is manageable and parallelization keeps things responsive.
 
@@ -824,7 +824,7 @@ All of that is done using  **Redis** as its caching layer, relying on a **Sorted
   - Get user metadata from UserServic
   - Return merged post objects + user metadata (up to pageSize) and updated cursor
 
-[GetFeed](images/GetFeed.png)
+![GetFeed](images/GetFeed.png)
 > NOTE: The Feed Service shown here applies a basic post-sorting approach. Real production systems use more sophisticated ranking logic, but the goal here is simply to illustrate the concept.
 
 [Algorithm powering the For You feed on X/Twitter](https://github.com/xai-org/x-algorithm) -  X Algorithm for feed creation
