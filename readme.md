@@ -603,7 +603,7 @@ Under normal conditions, this works fine. But when a post becomes viral, the `Up
 - Each update acquires a lock on the row/field. Concurrent updates must wait for the lock to be released.Which leads to a to contention, slowing down the system. It is not a normal key anymore, it is a `hot_key` everyone wants it.
 
 
-[LikeCounterUpdate](images/UpdateLikeCounter.png)
+![LikeCounterUpdate](images/UpdateLikeCounter.png)
 
 **Solution:** Move the counter to a **cache**.  
 
