@@ -2,7 +2,7 @@
 
 There’s a common saying in the industry that the first rule of microservices is: **don’t do microservices**. The idea is that if you can avoid the complexity, you probably should. In this repository, I do them anyway (even if it is just a mini example) — but with a focus on understanding the real cost and learning.
 
-This Readme will be more like a blog, sharing notes , ideas and what i have done logically to create the project. not too much about the code. nowdays in AI ERA the easiest thing to do is understand most of the code. 
+This Readme will be more like a blog, sharing notes, ideas and what I have done logically to create the project. not too much about the code. today’s AI era the easiest thing to do is understand most of the code. 
 
 The process is incremental and consists of several stages:
 
@@ -260,7 +260,7 @@ So if the JWT has 8 minutes left, the attacker keeps access for 8 minutes. That�
 
 The common fix is having a **revocation list** (a store that keeps track of invalid JWTs). But once you do that, you’re checking a stateful store on each request again. At that point, it’s not very different from session IDs, except JWTs are bigger and carry more bandwidth overhead.
 
-> We can store revoked IDs in a global cache again or pushig all invalid UserIDs using Queue to our running gateways and delete it automatically using timer after N mins(Much faster than cache).
+> We can store revoked IDs in a global cache again. Another Idea I think about is pushig all invalid UserIDs using Queue to our running gateways and delete it automatically using timer after N mins(Much faster than cache and if we implement that, I think stateless may start making sense).
 
 #### Where JWTs shine
 
@@ -432,76 +432,6 @@ In my local dev, I used **etcd** (a key-value store), to implement the service r
 
 So now it's time to talk about Services. I will start with **POST SERVICE**. Basically, whenever we want to do any operation related to posts (create post, add post, likes, comments, etc.), all of that will be handled inside the post service. The main idea is pretty straightforward: the post service owns everything related to posts.
 
-### State Core Components of the Post Service
-
-As shown in the first Figure , The post service talks to two Postgres database and cache. I manually configured a replica for high availability by creating a physical replication slot and replication user.  
-
-> NOTE: there are tools do that automatically for Postgres, but the whole point here is to do things from scratch.
-
-```postgres 
-# User with required authorites
-CREATE ROLE physical_rep WITH REPLICATION LOGIN PASSWORD 'YOUR_PASSWORD';
-
-SELECT pg_create_physical_replication_slot('secondary_slot');
-```
-
-Also a configuration is modified in postgres.conf at the first intiallization of it by a bash script
-
-```sh
-#!/usr/bin/env bash
-set -e
-
-
-echo "Configuring primary for streaming replication..."
-
-cat >> "$PGDATA/postgresql.conf" <<'EOF'
-# replication settings
-listen_addresses = '*'
-wal_level = logical  # for physical + logical (CDC) replication
-max_wal_senders = 10
-wal_keep_size = 128MB
-hot_standby = on
-EOF
-
-echo "host replication physical_rep 0.0.0.0/0 md5" >> "$PGDATA/pg_hba.conf"
-
-
-echo "Primary configured."
-```
-
-Another Script will run on the replicaDB at the first time to start the streaming 
-
-```sh
-#!/usr/bin/env bash
-set -e
-
-PRIMARY_HOST=${PRIMARY_HOST:-"postgres_primary"}
-PRIMARY_PORT=${PRIMARY_PORT:-5432}
-REPL_USER=${REPL_USER:-"physical_rep"}
-PGDATA=${PGDATA:-/var/lib/postgresql/data}
-
-
-echo "Waiting for primary ${PRIMARY_HOST}:${PRIMARY_PORT}..."
-until pg_isready -h "$PRIMARY_HOST" -p "$PRIMARY_PORT" -U postgres; do
-  sleep 1
-done
-echo "Primary is ready."
-
-
-if [ -s "$PGDATA/PG_VERSION" ]; then
-  rm -rf "${PGDATA:?}/"*
-fi
-
-
-echo "Running pg_basebackup..."
-export PGPASSWORD="${PGPASSWORD:-replicator_pass}"
-pg_basebackup -h "$PRIMARY_HOST" -p $PRIMARY_PORT -D "$PGDATA" -U "$REPL_USER" -v -P -X stream -R
-
-echo "Base backup complete. primary_conninfo and standby config written."
-
-
-```
-
 ## Postgres Replication & Cache
 
 As shown in the first Figure , The post service talks to two Postgres database and cache. I manually configured a replica for high availability by creating a physical replication slot and replication user.  
@@ -622,7 +552,7 @@ Finally, every **N minutes**, we could sync those counters back to the DB in bat
 
 No microservices architecture is complete without **message queues**. To get hands-on experience, I will use **Kafka** to stream post creation events, which will be consumed by the `feed_service` to update user feeds.
 
-One complexity appear here is **reliability**. Imagine if we separate the database write and Kafka streaming:
+One complexity appear here is **consistency**. Imagine if we separate the database write and Kafka streaming:
 ```
 CreatePost ---> UpdateDB ---> StreamToKafka
 ```
@@ -635,7 +565,7 @@ To solve this problem ,we can run a `cron-job` that periodically scans for unstr
 
 To make it cleaner and avoid load on main postsDB, we can separate this into a dedicated table like `streamed_table` with `post_id` and `is_streamed`, and ensure **atomicity** between the tables using transactions, so a record is only inserted in `streamed_table` if the post insert succeeds. This way, either everything happens or nothing does, avoiding the problems of separation. That’s essentially a small introduction to the **Outbox Pattern** in action.
 
-Using transactions is great, but we can make this even more reliable with **CDC (Change Data Capture)**.
+Using transactions is great, but we can make this even more consistence with **CDC (Change Data Capture)**.
 
 ### How CDC Works
 
