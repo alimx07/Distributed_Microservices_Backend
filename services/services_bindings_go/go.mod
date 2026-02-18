@@ -1,4 +1,4 @@
-module github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go
+module github.com/alimx07/Distributed_Microservices_Backend/services/services_bindings_go
 
 go 1.24.4
 
