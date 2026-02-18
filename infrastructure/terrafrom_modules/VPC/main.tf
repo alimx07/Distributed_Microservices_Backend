@@ -104,3 +104,20 @@ resource "aws_subnet" "infra_subnets" {
     cidr_block = cidrsubnet(aws_vpc.this.cidr_block , var.cidr_subnet_mask , count.index + (2*length(local.azs)))
     tags = local.default_tags
 }
+
+
+
+# Gateway VPC Endpoint
+
+resource "aws_vpc_endpoint" "s3" {
+    vpc_id = aws_vpc.this.id
+    vpc_endpoint_type = "Gateway"
+    service_name = "com.amazonaws.eu-west-1.s3" 
+    tags = local.default_tags
+}
+
+resource "aws_vpc_endpoint_route_table_association" "s3_association" {
+    count = length(aws_route_table.private_tables[*])
+    route_table_id = aws_route_table.private_tables[count.index].id 
+    vpc_endpoint_id = aws_vpc_endpoint.s3.id
+}
