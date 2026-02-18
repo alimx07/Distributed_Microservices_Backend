@@ -8,6 +8,7 @@ resource "kubectl_manifest" "letsencrypt" {
     }
     spec = {
       acme = {
+        email = var.email
         privateKeySecretRef = {
           name = "letsencrypt-${var.environment}"
         }

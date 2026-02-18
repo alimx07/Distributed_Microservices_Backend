@@ -1,5 +1,6 @@
 locals {
   prefix = "tf-nodegroup-${var.environment}"
+  
 }
 
 data "aws_region" "region" {}

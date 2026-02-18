@@ -2,7 +2,7 @@ resource "helm_release" "nginx_ingress" {
   name             = "ingress-nginx"
   repository       = "https://kubernetes.github.io/ingress-nginx"
   chart            = "ingress-nginx"
-  namespace        = "ingress-nginx-sa"
+  namespace        = "ingress-nginx-ns"
   version          = "4.14.3"
   create_namespace = true
   atomic           = true
@@ -39,7 +39,7 @@ resource "helm_release" "cert_manager" {
   name             = "cert-manager"
   repository       = "https://charts.jetstack.io"
   chart            = "cert-manager"
-  namespace        = "cert-manager-sa"
+  namespace        = "cert-manager-ns"
   version          = "1.19.3"
   create_namespace = true
 
@@ -47,6 +47,14 @@ resource "helm_release" "cert_manager" {
     yamlencode({
       installCRDs = true
       replicaCount = 2
+      serviceAccount = {
+        annotations = {
+          "eks.amazonaws.com/role-arn" = module.cert_manager_irsa.iam_role_arn
+        }
+      }
+      securityContext = {
+        fsGroup = 1001
+      }
     })
    ]
 
@@ -59,7 +67,7 @@ resource "helm_release" "argo_cd" {
   name             = "argo-cd"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
-  namespace        = "argocd-sa"
+  namespace        = "argocd-ns"
   version          = "9.4.0"
   create_namespace = true
 
@@ -76,6 +84,10 @@ resource "helm_release" "argo_cd" {
         ingress = {
           enabled = true
           ingressClassName = "nginx"
+          annotations = {
+            "cert-manager.io/cluster-issuer" = "letsencrypt-${var.environment}"
+          }
+          # tls = true
         }
       }
       configs = {
@@ -97,12 +109,24 @@ resource "helm_release" "argo_cd" {
 resource "helm_release" "eso" {
   name             = "external-secrets"
   chart            = "external-secrets"
-  namespace        = "external-secrets-sa"
+  namespace        = "external-secrets-ns"
   repository       = "https://charts.external-secrets.io"
   version          = "1.3.2"
   timeout          = 300
   atomic           = true
   create_namespace = true
+
+  values = [
+    yamlencode({
+    installCRDs = true 
+    replicaCount = 2
+    serviceAccount = {
+      annotations = {
+        "eks.amazonaws.com/role-arn" = module.external_secrets_irsa.iam_role_arn
+      }
+    }
+  })
+  ]
 
   depends_on = [ aws_eks_node_group.this ]
 }

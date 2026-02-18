@@ -83,29 +83,9 @@ data "aws_route53_zone" "this" {
 
 data "aws_lb" "nginx_nlb" {
   tags = {
-    "kubernetes.io/service-name" = "ingress-nginx-sa/ingress-nginx-controller"
+    "kubernetes.io/service-name" = "ingress-nginx-ns/ingress-nginx-controller"
   }
 
   depends_on = [helm_release.nginx_ingress]
 }
 
-module "cert_manager_irsa" {
-  source                = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version               = "~> 5.0"
-  role_name             = "${local.prefix}-cert_manager_irsa"
-
-  attach_cert_manager_policy = true
-
-  # cert_manager_hosted_zone_arns = [data.aws_route53_zone.arn]
-  oidc_providers = {
-    ex = {
-      provider_arn               = var.eks_oidc
-      namespace_service_accounts = ["kube-system:cert_manager-sa"]
-    }
-  }
-
-  tags = merge(local.default_tags,
-    {
-      Name = "${local.prefix}-cert_manager_irsa"
-    })
-}
