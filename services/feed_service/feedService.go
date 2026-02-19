@@ -3,22 +3,25 @@ package main
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
+
+	// "fmt"
 	"log"
 	"net"
 	"net/http"
 	"slices"
 	"strconv"
-	"strings"
+
+	// "strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	cachedrepo "github.com/alimx07/Distributed_Microservices_Backend/feed_service/cachedRepo"
-	"github.com/alimx07/Distributed_Microservices_Backend/feed_service/models"
-	pb "github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go"
-	"github.com/google/uuid"
-	etcd "go.etcd.io/etcd/client/v3"
+	cachedrepo "github.com/alimx07/Distributed_Microservices_Backend/services/feed_service/cachedRepo"
+	"github.com/alimx07/Distributed_Microservices_Backend/services/feed_service/models"
+	pb "github.com/alimx07/Distributed_Microservices_Backend/services/services_bindings_go"
+
+	// "github.com/google/uuid"
+	// etcd "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,7 +41,7 @@ type FeedService struct {
 	httpServer   *http.Server
 	wg           *sync.WaitGroup
 	serviceOFF   atomic.Bool
-	etcdClient   *etcd.Client
+	// etcdClient   *etcd.Client
 }
 
 func NewFeedService(config models.ServerConfig, Kconfig models.KafkaConfig, cacheConfig models.RedisConfig) (*FeedService, error) {
@@ -102,20 +105,20 @@ func (fs *FeedService) Start() error {
 	grpcServer := grpc.NewServer()
 	pb.RegisterFeedServiceServer(grpcServer, fs)
 	fs.grpcServer = grpcServer
-	etcdClient, err := etcd.New(etcd.Config{Endpoints: strings.Split(fs.config.EtcdEndpoints, ","), DialTimeout: 5 * time.Second})
-	if err != nil {
-		log.Printf("Error in Register instance of feedService: %v", err)
-		return err
-	}
-	fs.etcdClient = etcdClient
-	lease, err := etcdClient.Grant(fs.ctx, 5)
-	if err != nil {
-		log.Printf("Error in Creating Lease to instance of feedService: %v", err)
-		return err
-	}
-	uuid := uuid.New()
-	etcdClient.Put(context.Background(), fmt.Sprintf("/services/feed_service/%v", uuid), net.JoinHostPort(fs.config.HostName, fs.config.ServerPort), etcd.WithLease(lease.ID))
-	etcdClient.KeepAlive(fs.ctx, lease.ID)
+	// etcdClient, err := etcd.New(etcd.Config{Endpoints: strings.Split(fs.config.EtcdEndpoints, ","), DialTimeout: 5 * time.Second})
+	// if err != nil {
+	// 	log.Printf("Error in Register instance of feedService: %v", err)
+	// 	return err
+	// }
+	// fs.etcdClient = etcdClient
+	// lease, err := etcdClient.Grant(fs.ctx, 5)
+	// if err != nil {
+	// 	log.Printf("Error in Creating Lease to instance of feedService: %v", err)
+	// 	return err
+	// }
+	// uuid := uuid.New()
+	// etcdClient.Put(context.Background(), fmt.Sprintf("/services/feed_service/%v", uuid), net.JoinHostPort(fs.config.HostName, fs.config.ServerPort), etcd.WithLease(lease.ID))
+	// etcdClient.KeepAlive(fs.ctx, lease.ID)
 	return grpcServer.Serve(conn)
 }
 
@@ -263,7 +266,7 @@ func (fs *FeedService) close() {
 	}
 
 	fs.cancel()
-	fs.etcdClient.Close()
+	// fs.etcdClient.Close()
 
 	// wait to any pending requests
 	done := make(chan struct{})

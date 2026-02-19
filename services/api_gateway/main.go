@@ -32,22 +32,11 @@ func main() {
 	}
 	log.Println("Rate limiter initialized")
 
-	LoadBalancer, err := NewLoadBalancer(config.ServiceRegistery)
+	serviceConns, err := NewServiceConnections(config.K8sServices)
 	if err != nil {
 		rateLimiter.close()
-		log.Fatalf("Failed to initiallize LoadBalancer: %v", err)
+		log.Fatalf("Failed to initialize service connections: %v", err)
 	}
-	// for serviceName, serviceConfig := range config.Services {
-	// 	if len(serviceConfig.Instances) == 0 {
-	// 		log.Printf("Warning: No instances configured for service %s", serviceName)
-	// 		continue
-	// 	}
-
-	// 	lb := NewRoundRobin(serviceConfig.Instances, serviceConfig.HealthCheckInterval)
-	// 	loadBalancers[serviceName] = lb
-	// 	log.Printf("Load balancer initialized for %s with %d instances", serviceName, len(serviceConfig.Instances))
-	// }
-
 	grpcInvoker := NewGRPCInvoker(config.RouteOptions)
 	log.Println("gRPC invoker initialized")
 
@@ -74,11 +63,11 @@ func main() {
 	// 	log.Fatalf("Failed to create Redis pool: %v", err)
 	// }
 	redis := redis.NewClient(&redis.Options{Addr: config.Redis.RedisAddr})
-	handler := NewHandler(config, LoadBalancer, grpcInvoker, rateLimiter, redis)
+	handler := NewHandler(config, serviceConns, grpcInvoker, rateLimiter, redis)
 	if handler == nil {
 		rateLimiter.close()
 		// grpcInvoker.close()
-		LoadBalancer.close()
+		serviceConns.close()
 		redis.Close()
 		log.Fatal("Failed to create handler")
 	}

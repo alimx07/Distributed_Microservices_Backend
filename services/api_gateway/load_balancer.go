@@ -1,191 +1,122 @@
 package main
 
+//###################################
+// NOTE: All code in comment was used during local deploy game
+// Now, K8s Services handle load balancing via kube-proxy/iptables.
+// Gateway now holds gRPC connections to K8s service DNS names aka serviceAccounts.
+// Path: Ingress -> Gateway -> K8s Service (DNS) -> Pod
+//###################################
+
 import (
-	"context"
-	"errors"
 	"fmt"
 	"log"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"time"
 
-	"github.com/alimx07/Distributed_Microservices_Backend/services/api_gateway/models"
-	"go.etcd.io/etcd/api/v3/mvccpb"
-	etcd "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-/*
-   For load balancing of services I will use Round Robin algorithm
-   It is simple one but fit to my assumption about services here
-   as all service instances are the same. in case of different instances
-   capabilities weighted (dynamic) round robin can be used.
-*/
-
-type LoadBalancer struct {
-	ctx       context.Context
-	cancel    context.CancelFunc
-	wg        sync.WaitGroup
-	Balancers map[string]*RoundRobin
-	client    *etcd.Client
+type ServiceConnections struct {
+	conns map[string]*grpc.ClientConn
 }
 
-type RoundRobin struct {
-	mu    sync.RWMutex
-	idx   atomic.Uint32 // to ensure even distributed under concurrent use
-	conns []*Service    // persistence conns
-}
-
-type Service struct {
-	conn *grpc.ClientConn
-	ID   string
-	// healthy atomic.Bool
-}
-
-/*
-	    TODO:
-
-		A good enchancment here would be add a watcher that watches config file
-		and recreate the load balancer objects for services if any new urls added
-		More complexity but cool and zero downtime for api_gateway
-*/
-
-func NewLoadBalancer(config models.RegisteryConfig) (*LoadBalancer, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	lb := &LoadBalancer{ctx: ctx, cancel: cancel, Balancers: make(map[string]*RoundRobin)}
-	client, err := etcd.New(etcd.Config{
-		Endpoints:   strings.Split(config.ServiceRegisteryPath, ","),
-		DialTimeout: 5 * time.Second,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Error in intiallizing etcd Client: %v", err.Error())
-	}
-	lb.client = client
-	lb.wg.Add(1)
-	go func() {
-		lb.watch(config.ServiceRegisteryPrefix)
-		lb.wg.Done()
-	}()
-	return lb, nil
-}
-
-func (lb *LoadBalancer) watch(prefix string) {
-	watchChan := lb.client.Watch(lb.ctx, prefix, etcd.WithPrefix())
-	resp, err := lb.client.Get(lb.ctx, prefix, etcd.WithPrefix())
-	if err != nil {
-		log.Printf("Error in getting previous Keys in registery if any: %v", err)
-	}
-	if resp != nil {
-		for _, entry := range resp.Kvs {
-			key, val, ID := getKeyValID(entry)
-			log.Printf("PUT %s = %s", key, val)
-			if _, ok := lb.Balancers[key]; !ok {
-				lb.Balancers[key] = newRoundRobin()
-			}
-			lb.Balancers[key].update(val, ID)
-		}
-	}
-	for watchRes := range watchChan {
-		if watchRes.Canceled {
-			log.Printf("Etcd Watcher Failed: %v", watchRes.Err())
-			break
-		}
-		if err := watchRes.Err(); err != nil {
-			log.Printf("watch error: %v", err)
+func NewServiceConnections(k8sServices map[string]string) (*ServiceConnections, error) {
+	sc := &ServiceConnections{conns: make(map[string]*grpc.ClientConn)}
+	for serviceName, addr := range k8sServices {
+		conn, err := grpc.NewClient(addr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			log.Printf("failed to connect to %s at %s: %v", serviceName, addr, err)
 			continue
 		}
-		for _, ev := range watchRes.Events {
-			key, val, ID := getKeyValID(ev.Kv)
-			switch ev.Type {
-			case etcd.EventTypePut:
-				log.Printf("PUT %s = %s", key, val)
-				if _, ok := lb.Balancers[key]; !ok {
-					lb.Balancers[key] = newRoundRobin()
-				}
-				lb.Balancers[key].update(val, ID)
-			case etcd.EventTypeDelete:
-				log.Printf("DELETE instance in Service %s", key)
-				lb.Balancers[key].delete(ID)
-			}
+		sc.conns[serviceName] = conn
+		log.Printf("Connected to K8s service: %s -> %s", serviceName, addr)
+	}
+	if len(sc.conns) == 0 {
+		return nil, fmt.Errorf("no service connections established")
+	}
+	return sc, nil
+}
+
+func (sc *ServiceConnections) GetConn(serviceName string) (*grpc.ClientConn, error) {
+	conn, exists := sc.conns[serviceName]
+	if !exists {
+		return nil, fmt.Errorf("no connection for service: %s", serviceName)
+	}
+	return conn, nil
+}
+
+func (sc *ServiceConnections) close() {
+	for name, conn := range sc.conns {
+		if err := conn.Close(); err != nil {
+			log.Printf("error closing connection to %s: %v", name, err)
 		}
 	}
 }
 
-func (lb *LoadBalancer) close() {
-	lb.cancel()
-	lb.client.Close()
-	lb.wg.Wait()
-	for _, lb := range lb.Balancers {
-		lb.close()
-	}
-}
+//==============================
+// OLD ONE
+//==============================
 
-func newRoundRobin() *RoundRobin {
-	// if pingInterval <= 0 {
-	// 	pingInterval = 5 * time.Second
-	// }
-	r := &RoundRobin{
-		conns: make([]*Service, 0),
-	}
+// type LoadBalancer struct {
+// 	// ctx       context.Context
+// 	// cancel    context.CancelFunc
+// 	// wg        sync.WaitGroup
+// 	Balancers map[string]*RoundRobin
+// 	// client    *etcd.Client
+// }
 
-	// go r.ping(pingInterval) // periodic health checks
-	return r
-}
+// type RoundRobin struct {
+// 	mu    sync.RWMutex
+// 	idx   atomic.Uint32
+// 	conns []*Service
+// }
 
-func (r *RoundRobin) update(serviceURL string, ID string) {
-	conn, err := grpc.NewClient(serviceURL,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Printf("error connecting to url: %s, err: %v", serviceURL, err)
-		return
-	}
+// type Service struct {
+// 	conn *grpc.ClientConn
+// 	ID   string
+// }
 
-	srv := &Service{
-		conn: conn,
-		ID:   ID,
-	}
-	// lock
-	r.mu.Lock()
-	defer r.mu.Unlock()
+// func NewLoadBalancer(k8sServices map[string]string) (*LoadBalancer, error) {
+// 	lb := &LoadBalancer{Balancers: make(map[string]*RoundRobin)}
+// 	for serviceName, addr := range k8sServices {
+// 		conn, err := grpc.NewClient(addr,
+// 			grpc.WithTransportCredentials(insecure.NewCredentials()),
+// 		)
+// 		if err != nil {
+// 			log.Printf("failed to connect to %s at %s: %v", serviceName, addr, err)
+// 			continue
+// 		}
+// 		rr := &RoundRobin{conns: []*Service{{conn: conn, ID: serviceName}}}
+// 		lb.Balancers[serviceName] = rr
+// 		log.Printf("Connected to service: %s -> %s", serviceName, addr)
+// 	}
+// 	return lb, nil
+// }
 
-	r.conns = append(r.conns, srv)
-	log.Printf("New Instance Added: %v %v", serviceURL, ID)
+// func (lb *LoadBalancer) close() {
+// 	for _, b := range lb.Balancers {
+// 		b.close()
+// 	}
+// }
 
-}
+// func (r *RoundRobin) close() {
+// 	r.mu.Lock()
+// 	defer r.mu.Unlock()
+// 	for _, srv := range r.conns {
+// 		srv.conn.Close()
+// 	}
+// }
 
-func (r *RoundRobin) delete(ID string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	for i, srv := range r.conns {
-		// log.Println(srv.ID, ID, srv.ID == ID)
-		if srv.ID == ID {
-			// close connection
-			r.conns[i].conn.Close()
-			r.conns[i] = r.conns[len(r.conns)-1]
-			r.conns = r.conns[:len(r.conns)-1]
-			return
-		}
-	}
-	log.Printf("%v not found", ID)
-}
-
-func (r *RoundRobin) ServiceConn() (*grpc.ClientConn, error) {
-
-	if len(r.conns) == 0 {
-		return nil, errors.New("no healthy instance for this service now")
-	}
-
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	idx := r.idx.Add(1) % uint32(len(r.conns))
-	return r.conns[idx].conn, nil
-
-}
+// func (r *RoundRobin) ServiceConn() (*grpc.ClientConn, error) {
+// 	if len(r.conns) == 0 {
+// 		return nil, errors.New("no healthy instance for this service now")
+// 	}
+// 	r.mu.RLock()
+// 	defer r.mu.RUnlock()
+// 	idx := r.idx.Add(1) % uint32(len(r.conns))
+// 	return r.conns[idx].conn, nil
+// }
 
 // func (r *RoundRobin) ping(pingInterval time.Duration) {
 
@@ -227,21 +158,20 @@ func (r *RoundRobin) ServiceConn() (*grpc.ClientConn, error) {
 
 // }
 
-func (r *RoundRobin) close() {
+// func (r *RoundRobin) close() {
+// 	// End Ping
+// 	// r.cancel()
+// 	for _, srv := range r.conns {
+// 		if srv.conn != nil {
+// 			srv.conn.Close()
+// 		}
+// 	}
+// }
 
-	// End Ping
-	// r.cancel()
-	for _, srv := range r.conns {
-		if srv.conn != nil {
-			srv.conn.Close()
-		}
-	}
-}
-
-func getKeyValID(kv *mvccpb.KeyValue) (string, string, string) {
-	key, val := strings.Split(string(kv.Key), "/"), string(kv.Value)
-	return key[2], val, key[3]
-}
+// func getKeyValID(kv *mvccpb.KeyValue) (string, string, string) {
+// 	key, val := strings.Split(string(kv.Key), "/"), string(kv.Value)
+// 	return key[2], val, key[3]
+// }
 
 // func getKeyID(ev *etcd.Event) (string, string) {
 // 	key := strings.Split(string(ev.Kv.Key), "/")

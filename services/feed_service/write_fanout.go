@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/alimx07/Distributed_Microservices_Backend/feed_service/models"
 	cachedrepo "github.com/alimx07/Distributed_Microservices_Backend/services/feed_service/cachedRepo"
+	"github.com/alimx07/Distributed_Microservices_Backend/services/feed_service/models"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 

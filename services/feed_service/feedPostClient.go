@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/alimx07/Distributed_Microservices_Backend/feed_service/models"
-	pb "github.com/alimx07/Distributed_Microservices_Backend/services_bindings_go"
+	"github.com/alimx07/Distributed_Microservices_Backend/services/feed_service/models"
+	pb "github.com/alimx07/Distributed_Microservices_Backend/services/services_bindings_go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

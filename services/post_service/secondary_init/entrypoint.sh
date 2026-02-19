@@ -1,3 +1,7 @@
+# ------------------------
+# ENABLE REPLICATION LOCALLY
+# ------------------------------
+
 #!/usr/bin/env bash
 set -e
 

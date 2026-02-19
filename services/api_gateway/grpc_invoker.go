@@ -136,12 +136,12 @@ func (g *GRPCInvoker) registerHttpRoutes(fdProto *descriptorpb.FileDescriptorPro
 			}
 
 			route := &models.RouteConfig{
-				Path:   httpPath,
-				Method: httpMethod,
-				Body:   httpRule.Body,
-				// Service:     serviceName,
-				GRPCService: grpcServiceName,
-				GRPCMethod:  methodProto.GetName(),
+				Path:           httpPath,
+				Method:         httpMethod,
+				Body:           httpRule.Body,
+				GRPCService:    grpcServiceName,
+				GRPCMethod:     methodProto.GetName(),
+				BackendService: serviceName, // maps to k8s_services config key
 			}
 
 			if g.httpRoutes[httpMethod] == nil {

@@ -43,8 +43,8 @@ func LoadConfig() (models.ServerConfig, error) {
 		PostService:    os.Getenv("POST_SERVICE"),
 		UserService:    os.Getenv("USER_SERVICE"),
 		FollowService:  os.Getenv("FOLLOW_SERVICE"),
-		EtcdEndpoints:  os.Getenv("ETCD_ENDPOINTS"),
-		HostName:       os.Getenv("HOSTNAME"),
+		// EtcdEndpoints:  os.Getenv("ETCD_ENDPOINTS"),
+		HostName: os.Getenv("HOSTNAME"),
 	}
 	return config, nil
 }

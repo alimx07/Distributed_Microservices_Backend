@@ -4,9 +4,10 @@ import (
 	"context"
 	"log"
 
-	pb "github.com/alimx07/Distributed_Microservices_Backend/services/services_bindings_go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	pb "github.com/alimx07/Distributed_Microservices_Backend/services/services_bindings_go"
 )
 
 type FollowClient struct {

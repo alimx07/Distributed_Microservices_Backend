@@ -20,8 +20,8 @@ type ServerConfig struct {
 	PostService    string
 	UserService    string
 	FollowService  string
-	EtcdEndpoints  string
-	HostName       string
+	// EtcdEndpoints  string
+	HostName string
 }
 
 type FeedItem struct {

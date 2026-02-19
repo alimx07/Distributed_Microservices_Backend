@@ -3,13 +3,14 @@ package models
 import "time"
 
 type AppConfig struct {
-	Server           ServerConfig            `yaml:"server"`
-	RateLimiting     RateLimitingConfig      `yaml:"rate_limiting"`
-	Redis            RedisConfig             `yaml:"redis_config"`
-	ServiceRegistery RegisteryConfig         `yaml:"service_registery"`
-	ProtoFiles       map[string]string       `yaml:"protoset_files"`
-	RouteOptions     map[string]*RouteOption `yaml:"route_options"`
-	PublicKey        []byte
+	Server       ServerConfig       `yaml:"server"`
+	RateLimiting RateLimitingConfig `yaml:"rate_limiting"`
+	Redis        RedisConfig        `yaml:"redis_config"`
+	// ServiceRegistery RegisteryConfig         `yaml:"service_registery"`
+	K8sServices  map[string]string       `yaml:"k8s_services"`
+	ProtoFiles   map[string]string       `yaml:"protoset_files"`
+	RouteOptions map[string]*RouteOption `yaml:"route_options"`
+	PublicKey    []byte
 }
 
 type ServerConfig struct {
@@ -56,6 +57,7 @@ type RouteConfig struct {
 	Body             string
 	GRPCService      string
 	GRPCMethod       string
+	BackendService   string
 	RequireAuth      bool
 	RateLimitEnabled bool
 }

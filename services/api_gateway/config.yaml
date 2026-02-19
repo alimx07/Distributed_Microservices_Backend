@@ -27,9 +27,16 @@ protoset_files:
   feed_service: "_proto/feed.protoset"
 
 
-service_registery: 
-    service_registery_path : http://etcd:2379
-    service_registery_prefix: /services/
+# service_registery: 
+#     service_registery_path : http://etcd:2379
+#     service_registery_prefix: /services/
+
+
+k8s_services:
+  user_service: "user-service:50051"
+  post_service: "post-service:50061"
+  follow_service: "follow-service:50071"
+  feed_service: "feed-service:50081"
 
 
 # Default is true , true

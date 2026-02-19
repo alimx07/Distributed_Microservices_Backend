@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alimx07/Distributed_Microservices_Backend/post_service/models"
+	"github.com/alimx07/Distributed_Microservices_Backend/services/post_service/models"
 	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
 )

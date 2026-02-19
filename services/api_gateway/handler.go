@@ -13,12 +13,12 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/alimx07/Distributed_Microservices_Backend/api_gateway/models"
+	"github.com/alimx07/Distributed_Microservices_Backend/services/api_gateway/models"
 )
 
 type Handler struct {
 	config       *models.AppConfig
-	loadBalancer *LoadBalancer
+	serviceConns *ServiceConnections // direct gRPC conns to K8s services
 	grpcInvoker  *GRPCInvoker
 	rateLimiter  *RateLimiter
 	redis        *redis.Client
@@ -32,10 +32,10 @@ var multiValueParams = map[string]bool{
 	"UserId": true,
 }
 
-func NewHandler(config *models.AppConfig, loadBalancer *LoadBalancer, grpcInvoker *GRPCInvoker, rateLimiter *RateLimiter, redis *redis.Client) *Handler {
+func NewHandler(config *models.AppConfig, serviceConns *ServiceConnections, grpcInvoker *GRPCInvoker, rateLimiter *RateLimiter, redis *redis.Client) *Handler {
 	h := &Handler{
 		config:       config,
-		loadBalancer: loadBalancer,
+		serviceConns: serviceConns,
 		grpcInvoker:  grpcInvoker,
 		rateLimiter:  rateLimiter,
 		redis:        redis,
@@ -159,17 +159,10 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lb, exists := h.loadBalancer.Balancers[route.GRPCService]
-	if !exists {
-		http.Error(w, "Service not available", http.StatusServiceUnavailable)
-		return
-	}
-
-	// Get healthy connection from load balancer
-	conn, err := lb.ServiceConn()
+	conn, err := h.serviceConns.GetConn(route.BackendService)
 	if err != nil {
-		log.Printf("Failed to get service connection: %v", err)
-		http.Error(w, "Service temporarily unavailable", http.StatusServiceUnavailable)
+		log.Printf("No connection for backend %s: %v", route.BackendService, err)
+		http.Error(w, "Service not available", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -370,7 +363,7 @@ func (h *Handler) checkAuth(w http.ResponseWriter, r *http.Request) (string, boo
 
 func (h *Handler) close() {
 	h.rateLimiter.close()
-	h.loadBalancer.close()
+	h.serviceConns.close()
 	h.redis.Close()
 }
 

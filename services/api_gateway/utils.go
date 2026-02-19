@@ -13,15 +13,11 @@ import (
 	"github.com/alimx07/Distributed_Microservices_Backend/services/api_gateway/models"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"gopkg.in/yaml.v3"
 )
 
 func LoadConfig() (models.ServerConfig, error) {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Println("Warning: .env file not found, using environment variables")
-	}
 	config := models.ServerConfig{
 		Port:          os.Getenv("SERVER_PORT"),
 		Host:          os.Getenv("SERVER_HOST"),
@@ -125,9 +121,9 @@ func LoadAppConfig(filename string) (*models.AppConfig, error) {
 		config.Redis.RedisAddr = redisAddr
 	}
 
-	if registeryAddr := os.Getenv("REGISTERY_ADDR"); registeryAddr != "" {
-		config.ServiceRegistery.ServiceRegisteryPath = registeryAddr
-	}
+	// if registeryAddr := os.Getenv("REGISTERY_ADDR"); registeryAddr != "" {
+	// 	config.ServiceRegistery.ServiceRegisteryPath = registeryAddr
+	// }
 
 	return &config, nil
 }

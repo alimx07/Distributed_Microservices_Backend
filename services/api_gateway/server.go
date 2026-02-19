@@ -68,10 +68,10 @@ func (s *Server) addRoutes() {
 }
 
 func (s *Server) Close() {
-	// prevent server from get newConns
+	// prevent server from accepting new connections
 	s.serviceOFF.Store(true)
 
-	// wait untill reflected in front LoadBalancer healthChecker
+	// wait \\
 	time.Sleep(5 * time.Second)
 
 	// Make sure current requests served

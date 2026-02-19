@@ -1,6 +1,6 @@
 package cachedrepo
 
-import "github.com/alimx07/Distributed_Microservices_Backend/servicesfeed_service/models"
+import "github.com/alimx07/Distributed_Microservices_Backend/services/feed_service/models"
 
 type Cache interface {
 	Set(models.FeedItem) error
