@@ -1,0 +1,122 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: post-service
+  namespace: dmb
+spec:
+  selector:
+    app: post-service
+  ports:
+    - port: 50061
+      targetPort: 50061
+      name: grpc
+    - port: 8080
+      targetPort: 8080
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: post-service
+  namespace: dmb
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: post-service
+  template:
+    metadata:
+      labels:
+        app: post-service
+    spec:
+      containers:
+        - name: post-service
+          image: alimx07/post_service:1.0
+          ports:
+            - containerPort: 50061
+              name: grpc
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: post-service-config
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: post-db-credentials
+                  key: primary_host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: post-db-credentials
+                  key: port
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: post-db-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: post-db-credentials
+                  key: password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: post-db-credentials
+                  key: db_name
+            - name: DB_REPLICA_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: post-db-credentials
+                  key: replica_host
+            - name: DB_REPLICA_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: post-db-credentials
+                  key: port
+            - name: DB_REPLICA_USER
+              valueFrom:
+                secretKeyRef:
+                  name: post-db-credentials
+                  key: username
+            - name: DB_REPLICA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: post-db-credentials
+                  key: password
+            - name: DB_REPLICA_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: post-db-credentials
+                  key: db_name
+            - name: CLUSTER_ADDR
+              valueFrom:
+                secretKeyRef:
+                  name: post-cache-credentials
+                  key: ELASTICACHE_CLUSTER_ENDPOINT
+            - name: CACHE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: post-cache-credentials
+                  key: ELASTICACHE_CLUSTER_PASSWORD     
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10

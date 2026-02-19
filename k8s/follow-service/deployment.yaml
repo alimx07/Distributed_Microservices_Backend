@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: follow-service
+  namespace: dmb
+spec:
+  selector:
+    app: follow-service
+  ports:
+    - port: 50071
+      targetPort: 50071
+      name: grpc
+    - port: 8080
+      targetPort: 8080
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: follow-service
+  namespace: dmb
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: follow-service
+  template:
+    metadata:
+      labels:
+        app: follow-service
+    spec:
+      containers:
+        - name: follow-service
+          image: alimx07/follow_service:1.0
+          ports:
+            - containerPort: 50071
+              name: grpc
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: follow-service-config
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: follow-db-credentials
+                  key: primary_host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: follow-db-credentials
+                  key: port
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: follow-db-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: follow-db-credentials
+                  key: password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: follow-db-credentials
+                  key: db_name
+            - name: DB_REPLICA_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: follow-db-credentials
+                  key: replica_host
+            - name: DB_REPLICA_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: follow-db-credentials
+                  key: port
+            - name: DB_REPLICA_USER
+              valueFrom:
+                secretKeyRef:
+                  name: follow-db-credentials
+                  key: username
+            - name: DB_REPLICA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: follow-db-credentials
+                  key: password
+            - name: DB_REPLICA_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: follow-db-credentials
+                  key: db_name
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 10

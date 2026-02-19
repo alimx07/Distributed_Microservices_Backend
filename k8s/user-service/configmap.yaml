@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-service-config
+  namespace: dmb
+data:
+  SERVER_PORT: "8080"
+  GRPC_PORT: "50051"
+  REDIS_DATABASE: "0"
+  REDIS_TIMEOUT: "60000"
+  JWT_PRIVATE_KEY_PATH: "classpath:keys/private.pem"
+  JWT_PUBLIC_KEY_PATH: "classpath:keys/public.pem"
+
+
+  #TODO: Get Keys from AWS Secrets Manager & Rotate

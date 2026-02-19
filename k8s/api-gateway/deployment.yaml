@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: dmb
+spec:
+  type: ClusterIP
+  selector:
+    app: api-gateway
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: dmb
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: alimx07/api_gateway:1.0
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: api-gateway-config
+          env:
+            - name: CLUSTER_ADDR
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-cache-credentials
+                  key: ELASTICACHE_CLUSTER_ENDPOINT
+            - name: REDIS_ADDR
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-cache-credentials
+                  key: ELASTICACHE_STANDALONE_ENDPOINT
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10

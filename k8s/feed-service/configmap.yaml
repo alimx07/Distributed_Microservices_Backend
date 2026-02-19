@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feed-service-config
+  namespace: dmb
+data:
+  SERVER_HOST: "0.0.0.0"
+  SERVER_PORT: "50081"
+  SERVER_HTTP_PORT: "8080"
+  GROUP_ID: "feed_service-1"
+  OFFSET_RESET: "latest"
+  FETCH_MIN_BYTES: "1"
+  TOPICS: "post_service.public.posts"
+  POST_SERVICE: "post-service:50061"
+  USER_SERVICE: "user-service:50051"
+  FOLLOW_SERVICE: "follow-service:50071"
+  KAFKA_TOPIC_PREFIX: "post_service"
+  BOOTSTRAP_SERVERS: "b-1.tfdmbdevkafka.qqshsz.c8.kafka.eu-west-1.amazonaws.com,b-2.tfdmbdevkafka.qqshsz.c8.kafka.eu-west-1.amazonaws.com,b-3.tfdmbdevkafka.qqshsz.c8.kafka.eu-west-1.amazonaws.com"
+
+
+# QUESTION : ARE URLs SECRETS OR NOT ?

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: follow-service-config
+  namespace: dmb
+data:
+  SERVER_PORT: "8080"
+  GRPC_PORT: "50071"
