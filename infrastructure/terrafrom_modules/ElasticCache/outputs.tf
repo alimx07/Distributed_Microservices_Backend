@@ -1,19 +1,18 @@
-output "cluster_endpoint" {
-  description = "Redis cluster configuration endpoint"
-  value       = aws_elasticache_replication_group.cluster.configuration_endpoint_address
-}
-
-output "cluster_port" {
-  value = 6379
-}
-
-output "standalone_endpoint" {
-  description = "Redis standalone primary endpoint"
-  value       = aws_elasticache_replication_group.standalone.primary_endpoint_address
-}
-
-output "standalone_port" {
-  value = 6379
+output "cache_connections" {
+  value = {
+    for name, svc in local.services_map : name => merge(
+      {
+        secret_arn = aws_secretsmanager_secret.cache_credentials[name].arn
+      },
+      svc.cluster_mode ? {
+        cluster_endpoint = aws_elasticache_replication_group.cluster[name].configuration_endpoint_address
+      } : {},
+      svc.standalone_mode ? {
+        standalone_endpoint = aws_elasticache_replication_group.standalone[name].primary_endpoint_address
+      } : {}
+    )
+  }
+  sensitive = true
 }
 
 output "security_group_ids" {

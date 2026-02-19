@@ -7,16 +7,22 @@ variable "vpc_id" {
 }
 
 variable "subnet_ids" {
-  type        = list(string)
+  type = list(string)
 }
 
 variable "private_cidr" {
-  type        = string
+  type = string
 }
 
-variable "node_type" {
-  type    = string
-  default = "cache.t3.micro"
+variable "services" {
+  type = list(object({
+    name               = string
+    cluster_mode       = optional(bool, false)
+    standalone_mode    = optional(bool, false)
+    num_shards         = optional(number, 3)
+    replicas_per_shard = optional(number, 1)
+    node_type          = optional(string, "cache.t3.micro")
+  }))
 }
 
 variable "engine_version" {
@@ -29,19 +35,7 @@ variable "parameter_group_family" {
   default = "redis7"
 }
 
-variable "num_shards" {
-  type    = number
-  default = 3
-}
-
-variable "replicas_per_shard" {
-  type    = number
-  default = 1
-}
-
 variable "default_tags" {
   type    = map(string)
   default = {}
 }
-
-
