@@ -21,6 +21,8 @@ resource "aws_eks_node_group" "this" {
     ignore_changes = [scaling_config[0].desired_size]
   }
 
+  tags = local.default_tags
+
   depends_on = [ aws_iam_role_policy_attachment.cni_policy , aws_iam_role_policy_attachment.ecr_policy , aws_iam_role_policy_attachment.worker_node_policy]
 }
 
@@ -35,6 +37,7 @@ resource "aws_iam_role" "eks_node_role" {
       Action = "sts:AssumeRole"
     }]
   })
+  tags = local.default_tags
 }
 
 resource "aws_iam_role_policy_attachment" "worker_node_policy" {

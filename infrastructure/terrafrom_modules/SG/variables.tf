@@ -26,6 +26,10 @@ variable "security_groups" {
   default     = []
 }
 
-variable "environment" {
-    type = string
+
+variable "default_tags" {
+  type = map(string)
+  default = {
+    "name" = "RDS"
+  }
 }

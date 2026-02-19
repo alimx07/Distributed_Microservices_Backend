@@ -28,6 +28,7 @@ variable "eks_oidc" {
 
 variable "email" {
     type = string
+    default = ""
 }
 
 

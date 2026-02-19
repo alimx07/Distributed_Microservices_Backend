@@ -61,5 +61,5 @@ resource "aws_vpc_security_group_egress_rule" "egress" {
   to_port           = each.value.ip_protocol == "-1" ? null : each.value.to_port
   ip_protocol       = each.value.ip_protocol
   description       = each.value.description
-  tags = local.default_tags
+  tags = var.default_tags
 }

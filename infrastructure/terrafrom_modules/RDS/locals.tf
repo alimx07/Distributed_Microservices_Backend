@@ -10,6 +10,11 @@ locals {
   }
 
   default_tags = merge(var.default_tags, {
+    Caller_id = data.aws_caller_identity.caller_id.account_id
     Name = "${local.prefix}-rds"
   })
 }
+
+data "aws_caller_identity" "caller_id" {
+}
+
