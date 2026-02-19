@@ -8,12 +8,10 @@ variable "vpc_id" {
 
 variable "subnet_ids" {
   type        = list(string)
-  description = "Subnet IDs for broker nodes (count must match number_of_broker_nodes)"
 }
 
 variable "private_cidr" {
   type        = string
-  description = "VPC private CIDR for security group ingress"
 }
 
 variable "kafka_version" {
@@ -39,23 +37,27 @@ variable "volume_size" {
 
 variable "debezium_plugin_zip_path" {
   type        = string
-  description = "Local path to the Debezium PostgreSQL connector ZIP"
 }
 
 variable "db_primary_host" {
   type        = string
-  description = "RDS primary endpoint for Debezium"
-}
-
-variable "db_connect_user" {
-  type    = string
-  default = "logical_rep"
-}
-
-variable "db_connect_password" {
-  type      = string
   sensitive = true
 }
+
+variable "secret_arn" {
+  type = string
+  sensitive = true
+}
+
+# variable "db_connect_user" {
+#   type    = string
+#   sensitive = true
+# }
+
+# variable "db_connect_password" {
+#   type      = string
+#   sensitive = true
+# }
 
 variable "db_name" {
   type    = string

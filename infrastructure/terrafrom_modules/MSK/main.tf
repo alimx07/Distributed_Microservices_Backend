@@ -7,7 +7,11 @@ locals {
 
   default_tags = merge(var.default_tags, {
     Name = "${local.prefix}-msk"
+    Caller_id = data.aws_caller_identity.caller_id.account_id
   })
+}
+
+data "aws_caller_identity" "caller_id" {
 }
 
 
@@ -166,6 +170,17 @@ resource "aws_iam_role_policy" "msk_connect" {
 }
 
 
+data "aws_secretsmanager_secret" "secret" {
+  arn = var.secret_arn
+}
+
+data "aws_secretsmanager_secret_version" "logical_secretes" {
+  secret_id = data.aws_secretsmanager_secret.secret.id
+}
+
+locals {
+  vals = jsonencode(data.aws_secretsmanager_secret_version.logical_secretes.secret_string)
+}
 
 resource "aws_mskconnect_connector" "debezium" {
   name = "${local.prefix}-debezium-postgres"
@@ -185,11 +200,11 @@ resource "aws_mskconnect_connector" "debezium" {
     "plugin.name"                        = "pgoutput"
     "publication.name"                   = "my_pub"
     "slot.name"                          = "logical_slot"
-    "database.hostname"                  = var.db_primary_host
-    "database.port"                      = "5432"
-    "database.user"                      = var.db_connect_user
-    "database.password"                  = var.db_connect_password
-    "database.dbname"                    = var.db_name
+    "database.hostname"                  = vals["primary_host"]
+    "database.port"                      = vals["port"]
+    "database.user"                      = vals["logical_user"]
+    "database.password"                  = vals["password"]
+    "database.dbname"                    = vals["dbname"]
     "topic.prefix"                       = "post_service"
     "key.converter"                      = "org.apache.kafka.connect.json.JsonConverter"
     "key.converter.schemas.enable"       = "false"
