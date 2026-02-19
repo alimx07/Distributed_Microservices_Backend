@@ -2,9 +2,6 @@ include {
   path = find_in_parent_folders("root.hcl")
 }
 
-locals {
-  env = read_terragrunt_config(find_in_parent_folders("env.hcl")).locals
-}
 
 terraform {
     source = "../../../terrafrom_modules//EKS_Nodes"
@@ -71,12 +68,10 @@ EOF
 
 
 inputs = {
-    environment = local.env.environment
     cluster_name = dependency.eks.outputs.cluster_name
     subnet_ids = dependency.vpc.outputs.private_subnets
     max_size = 5
     min_size = 2
     desired_size = 4
     eks_oidc = dependency.eks.outputs.eks_oidc
-    default_tags = local.env.default_tags
 }

@@ -1,8 +1,16 @@
 locals {
-  project = "DMB"
-  region  = "eu-west-1"
-  env = basename(get_terragrunt_dir())
+  env_vars = read_terragrunt_config(find_in_parent_folders("env.hcl")).locals
+  environment = local.env_vars.environment
+  # project = "DMB"
+  region = local.env_vars.region # easy access
+  default_tags = {
+    Environment = local.environment
+    Project     = "DMB"
+    ManagedBy   = "terraform"
+  }
 }
+
+# Shared between All ENVs
 
 remote_state {
   backend = "s3"
@@ -28,3 +36,5 @@ provider "aws" {
 EOF
 }
 
+
+inputs = local

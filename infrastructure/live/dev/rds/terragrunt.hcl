@@ -12,21 +12,12 @@ terraform {
 
 dependency "vpc" {
   config_path = "../vpc"
-  # mock_outputs = {
-  #   vpc_id          = "vpc-mock"
-  #   private_subnets = ["subnet-mock-1", "subnet-mock-2"]
-  # }
 }
-
 dependency "eks" {
   config_path = "../eks"
-  # mock_outputs = {
-  #   cluster_security_group_id = "sg-mock"
-  # }
 }
 
 inputs = {
-  environment = local.env.environment
   vpc_id      = dependency.vpc.outputs.vpc_id
   subnet_ids  = dependency.vpc.outputs.private_subnets
   allowed_cidr_block = "10.0.0.0/16"
@@ -49,5 +40,4 @@ inputs = {
   instance_class    = "db.t3.micro"
   allocated_storage = 20
   engine_version    = "17"
-  default_tags      = local.env.default_tags
 }
