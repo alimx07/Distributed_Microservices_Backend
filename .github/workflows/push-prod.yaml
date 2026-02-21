@@ -1,0 +1,41 @@
+name: PUSH IMGAGE PROD
+
+on:
+  push:
+    branches: [main]
+    paths: ['services/**']
+
+# TODO: ADD TESTS
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Get last two commits
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build, push, and update manifests
+        # LOOP on all services, find if any change happen from pervious commit
+        # build image & push, finally modify image line in k8s deployment files
+        run: |
+          for svc in api_gateway user_service post_service follow_service feed_service; do
+            if git diff --name-only HEAD~1 HEAD | grep -q "^services/${svc}/"; then
+              docker build -t alimx07/${svc}:latest -t alimx07/${svc}:${{ github.sha }} services/${svc}
+              docker push alimx07/${svc}:latest
+              docker push alimx07/${svc}:${{ github.sha }}
+              k8s_dir="k8s/$(echo ${svc} | tr '_' '-')"
+              sed -i "s|image: alimx07/${svc}:.*|image: alimx07/${svc}:${{ github.sha }}|" ${k8s_dir}/deployment.yaml
+            fi
+          done
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "CI: Update prod image to ${{ github.sha }}"
+          file_pattern: "k8s/*/deployment.yaml"
