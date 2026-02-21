@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dmb-prod
+  namespace: argocd-ns
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alimx07/Distributed_Microservices_Backend.git
+    targetRevision: main
+    path: k8s 
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dmb
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
