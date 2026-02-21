@@ -39,10 +39,10 @@ variable "debezium_plugin_zip_path" {
   type        = string
 }
 
-variable "db_primary_host" {
-  type        = string
-  sensitive = true
-}
+# variable "db_primary_host" {
+#   type        = string
+#   sensitive = true
+# }
 
 variable "secret_arn" {
   type = string
@@ -59,10 +59,10 @@ variable "secret_arn" {
 #   sensitive = true
 # }
 
-variable "db_name" {
-  type    = string
-  default = "postdb"
-}
+# variable "db_name" {
+#   type    = string
+#   default = "postdb"
+# }
 
 variable "default_tags" {
   type    = map(string)

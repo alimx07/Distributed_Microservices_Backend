@@ -179,7 +179,7 @@ data "aws_secretsmanager_secret_version" "logical_secretes" {
 }
 
 locals {
-  vals = jsonencode(data.aws_secretsmanager_secret_version.logical_secretes.secret_string)
+  vals = jsondecode(data.aws_secretsmanager_secret_version.logical_secretes.secret_string)
 }
 
 resource "aws_mskconnect_connector" "debezium" {
@@ -200,11 +200,11 @@ resource "aws_mskconnect_connector" "debezium" {
     "plugin.name"                        = "pgoutput"
     "publication.name"                   = "my_pub"
     "slot.name"                          = "logical_slot"
-    "database.hostname"                  = vals["primary_host"]
-    "database.port"                      = vals["port"]
-    "database.user"                      = vals["logical_user"]
-    "database.password"                  = vals["password"]
-    "database.dbname"                    = vals["dbname"]
+    "database.hostname"                  = local.vals["primary_host"]
+    "database.port"                      = local.vals["port"]
+    "database.user"                      = local.vals["logical_user"] # make sure to add this
+    "database.password"                  = local.vals["logical_password"]
+    "database.dbname"                    = local.vals["dbname"]
     "topic.prefix"                       = "post_service"
     "key.converter"                      = "org.apache.kafka.connect.json.JsonConverter"
     "key.converter.schemas.enable"       = "false"
