@@ -6,4 +6,4 @@ metadata:
 data:
   SERVER_HOST: "0.0.0.0"
   SERVER_PORT: "8080"
-  PUBLIC_KEY_ADDR: "user-service:8080/public-key"
+  PUBLIC_KEY_ADDR: "http://user-service:8080/public-key"
