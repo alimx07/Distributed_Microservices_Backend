@@ -66,7 +66,7 @@ The project is a social media platfrom includes multiple services from scratch w
 ----------------------------------------------
 
 **SERVICES LOGIC**W
-![Full Service Design](images/services_logic.png)
+![Full Service Design](images/Services_logic.png)
 
 
 --------------
@@ -158,7 +158,7 @@ There are several algorithms for enforcing rate limits. One common approach is t
 
 #### Why Token Bucket ?
 
-There are different [RateLimiting algorithms]((https://blog.algomaster.io/p/rate-limiting-algorithms-explained-with-code). Compared to the other popular rate limiting algorithms like **Leaky Bucket** and **Sliding Window**, the **Token Bucket** has clear pros for handling our users interactions (posts, likes, and comments).
+There are different [RateLimiting algorithms](https://blog.algomaster.io/p/rate-limiting-algorithms-explained-with-code). Compared to the other popular rate limiting algorithms like **Leaky Bucket** and **Sliding Window**, the **Token Bucket** has clear pros for handling our users interactions (posts, likes, and comments).
 
 - **Token Bucket**  
   The basic idea of the token bucket allows bursts of user activity up to the number of tokens available in the bucket within a time window, which means users can perform multiple actions quickly without being blocked, making it in other words *natural for our interactions*.
