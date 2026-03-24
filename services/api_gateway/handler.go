@@ -150,7 +150,6 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read request body", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
 
 	// Build Request body , add any params found
 	requestData, err := h.buildRequestData(r, route, body, userID)
@@ -232,7 +231,15 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(responseJSON)
+	_, err = w.Write(responseJSON)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to build request: %v", err), http.StatusInternalServerError)
+	}
+
+	err = r.Body.Close()
+	if err != nil {
+		log.Println("Error Closing Body", err.Error())
+	}
 }
 
 // findRoute finds the matching route configuration
@@ -365,7 +372,10 @@ func (h *Handler) checkAuth(w http.ResponseWriter, r *http.Request) (string, boo
 func (h *Handler) close() {
 	h.rateLimiter.close()
 	h.serviceConns.close()
-	h.redis.Close()
+	err := h.redis.Close()
+	if err != nil {
+		log.Println("error closing redis client", err.Error())
+	}
 }
 
 // GetRouteMap returns the route map for server registration

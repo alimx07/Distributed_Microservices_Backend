@@ -70,7 +70,6 @@ func GetPublicKey(addr string) ([]byte, error) {
 		log.Println(err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		// log.Println(resp.Status)
@@ -83,6 +82,11 @@ func GetPublicKey(addr string) ([]byte, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		log.Println(err.Error())
 		return nil, err
+	}
+
+	err = resp.Body.Close()
+	if err != nil {
+		log.Println("Error Closing Body", err.Error())
 	}
 	// log.Println(data.PublicKey)
 	return []byte(data.PublicKey), nil
