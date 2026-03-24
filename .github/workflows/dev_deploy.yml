@@ -4,6 +4,8 @@ name: Deploy to Dev enviroment
 on:
   push:
     branches: [main] # PR Merged
+    paths:
+     - 'services/**'
 
 
 jobs:
@@ -11,7 +13,7 @@ jobs:
     name: Detect Changed Services
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.detect.outputs.matrix}}
+      matrix: ${{ steps.detect.outputs.matrix }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -30,7 +32,7 @@ jobs:
   build_push:
     needs: [detect]
     runs-on: ubuntu-latest
-    if: needs.detect.outputs.matrix != '[]'
+    if: needs.detect.outputs.matrix != '[""]'
     permissions:
       contents: write
     strategy:
@@ -47,12 +49,12 @@ jobs:
             services/${{ matrix.service }}
             ${{steps.path.outputs.k8s_path}}
       - name: Build
-      - run: |
+        run: |
             docker build -t alimx07/${{matrix.service}}:${{ github.sha }} services/${{ matrix.service }}
       - name: Scan Image
         uses: aquasecurity/trivy-action@0.35.0
         with:
-          image-ref: alimx07/${{matrix.service}}/${{ github.sha }}
+          image-ref: alimx07/${{ matrix.service }}/${{ github.sha }}
           scan-type: 'image'
           scanners: 'vuln'
           severity: 'HIGH,CRITICAL'
@@ -66,12 +68,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Push Image
         run: |
-          docker push alimx07/${{matrix.service}}:${{ github.sha }}
+          docker push alimx07/${{ matrix.service }}:${{ github.sha }}
       - name: Update manifests
         run: |
           sed -i "s|image: alimx07/${{ matrix.service }}:.*|image: alimx07/${{ matrix.service }}:${{ github.sha }}|" ${{steps.path.outputs.k8s_path}}/deployment.yaml
       - name: Push to Repo
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
-          commit_message: "Service CI: update ${{matrix.service}} image to ${{ github.sha }} "
+          commit_message: "Service CI: update ${{ matrix.service }} image to ${{ github.sha }} "
           file_pattern: "k8s/*/deployment.yaml"

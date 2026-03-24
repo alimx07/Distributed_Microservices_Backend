@@ -2,7 +2,7 @@ name: GO Services Test
 
 on:
   pull_request:
-    branches: [devel, main]
+    branches: [main]
     paths:
       - 'services/api_gateway/**'
       - 'services/feed_service/**'

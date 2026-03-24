@@ -2,7 +2,7 @@ name: Java Services Test
 
 on:
   pull_request:
-    branches: [devel, main]
+    branches: [main]
     paths:
       - 'services/user_service/**'
       - 'services/follow_service/**'
