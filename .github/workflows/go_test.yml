@@ -32,11 +32,11 @@ jobs:
           sparse-checkout: |
             .github
             services/${{ matrix.service }}
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.1
+          version: latest
           working-directory: services/${{ matrix.service }}
-          args: --config=../../.github/.golangci.yml
+          args: --config=.github/.golangci.yml
 
   security:
     name: Security (${{ matrix.service }})
