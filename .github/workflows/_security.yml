@@ -1,0 +1,55 @@
+name: Security Scan
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        type: string
+        required: true
+      service_path:
+        type: string
+        required: true
+      rulesets:
+        type: string
+        required: true
+        description: "semgrep rulesets"
+
+jobs:
+  semgrep:
+    name: Semgrep (${{ inputs.service }})
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            ${{ inputs.service_path }}
+      - name: Install Semgrep
+        run: pip install semgrep
+      - name: Run Semgrep
+        env:
+          RULESETS: ${{ inputs.rulesets }}
+          SCAN_PATH: ${{ inputs.service_path }}
+        run: |
+          CONFIG_FLAGS=""
+          for r in $RULESETS; do
+            CONFIG_FLAGS="$CONFIG_FLAGS --config $r"
+          done
+          semgrep scan $CONFIG_FLAGS --error "$SCAN_PATH"
+
+  trivy:
+    name: Trivy SCA (${{ inputs.service }})
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            ${{ inputs.service_path }}
+      - name: Run Trivy SCA
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          scan-type: 'fs'
+          scan-ref: ${{ inputs.service_path }}
+          scanners: 'vuln'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+          format: 'table'

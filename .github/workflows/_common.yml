@@ -1,0 +1,49 @@
+
+on:
+  workflow_call:
+    inputs:
+      services-to-check:
+        required: true
+        type: string
+    secrets:
+      token:
+        required: true
+    outputs:
+      matrix:
+        description: "Services changed in PR"
+        value: ${{ jobs.detect_changes.outputs.matrix }}
+
+
+jobs:
+  secrets_scan:
+    name: Scan for Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
+
+  detect_changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Detect changed services
+        id: detect
+        run: |
+          SERVICES=()
+          CHECK=$(echo '${{ inputs.services-to-check }}' | jq -r '.[]')
+          for svc in $CHECK; do
+            if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^services/${svc}/"; then
+              SERVICES+=("$svc")
+            fi
+          done
+          MATRIX=$(printf '%s\n' "${SERVICES[@]}" | jq -R . | jq -sc .)
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT

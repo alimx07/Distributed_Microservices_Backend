@@ -1,0 +1,14 @@
+version: "2"
+linters:
+  enable:
+    - staticcheck
+    # - gosec  , It will run through semgrep
+  settings:
+    staticcheck:
+      checks:
+        - SA5011
+        - SA5000
+        - SA5007
+formatters:
+  enable:
+    - gofmt

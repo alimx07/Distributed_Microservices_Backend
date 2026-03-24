@@ -1,0 +1,75 @@
+name: GO Services Test
+
+on:
+  pull_request:
+    branches: [devel, main]
+    paths:
+      - 'services/api_gateway/**'
+      - 'services/feed_service/**'
+      - 'services/post_service/**'
+
+jobs:
+  common:
+    name: Scan for Secrets & Detect Changed Services
+    uses: ./.github/workflows/_common.yml
+    with:
+      services-to-check: '["api_gateway", "feed_service", "post_service"]'
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+
+  golangci:
+    name: Lint (${{ matrix.service }})
+    needs: common
+    if: needs.common.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.common.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            .github
+            services/${{ matrix.service }}
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.1
+          working-directory: services/${{ matrix.service }}
+          args: --config=../../.github/.golangci.yml
+
+  security:
+    name: Security (${{ matrix.service }})
+    needs: common
+    if: needs.common.outputs.matrix != '[]'
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.common.outputs.matrix) }}
+      fail-fast: false
+    uses: ./.github/workflows/_security.yml
+    with:
+      service: ${{ matrix.service }}
+      service_path: services/${{ matrix.service }}
+      rulesets: "p/gosec p/owasp-top-ten"
+
+  test:
+    name: Tests (${{ matrix.service }})
+    needs: [common, golangci, security]
+    if: needs.common.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.common.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            services/${{ matrix.service }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: services/${{ matrix.service }}/go.sum
+      - name: Run Tests
+        working-directory: services/${{ matrix.service }}
+        run: go test ./...

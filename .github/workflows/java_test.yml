@@ -1,0 +1,80 @@
+name: Java Services Test
+
+on:
+  pull_request:
+    branches: [devel, main]
+    paths:
+      - 'services/user_service/**'
+      - 'services/follow_service/**'
+
+jobs:
+  common:
+    name: Scan for Secrets & Detect Changed Services
+    uses: ./.github/workflows/_common.yml
+    with:
+      services-to-check: '["user_service", "follow_service"]'
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+
+  checkstyle:
+    name: Checkstyle (${{ matrix.service }})
+    needs: common
+    if: needs.common.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.common.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            services/${{ matrix.service }}
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Run Checkstyle
+        working-directory: services/${{ matrix.service }}
+        run: |
+          ./mvnw org.apache.maven.plugins:maven-checkstyle-plugin:3.6.0:check \
+            -Dcheckstyle.config.location=google_checks.xml \
+            -Dcheckstyle.failsOnError=true
+
+  security:
+    name: Security (${{ matrix.service }})
+    needs: common
+    if: needs.common.outputs.matrix != '[]'
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.common.outputs.matrix) }}
+      fail-fast: false
+    uses: ./.github/workflows/_security.yml
+    with:
+      service: ${{ matrix.service }}
+      service_path: services/${{ matrix.service }}
+      rulesets: "p/java p/owasp-top-ten"
+
+  test:
+    name: Tests (${{ matrix.service }})
+    needs: [common, checkstyle, security]
+    if: needs.common.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.common.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            services/${{ matrix.service }}
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Run Tests
+        working-directory: services/${{ matrix.service }}
+        run: ./mvnw test
