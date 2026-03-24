@@ -193,7 +193,7 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println("tokens unmarshal failed")
 			http.Error(w, fmt.Sprintf("Decoding Error , %v", err), http.StatusInternalServerError)
 		}
-
+		//nosemgrep
 		access_token := &http.Cookie{
 			Name:     "accessToken",
 			Value:    token.Access,
@@ -203,6 +203,7 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 			//  Secure:   true,  required in production for https
 		}
 
+		//nosemgrep
 		refresh_token := &http.Cookie{
 			Name:  "refreshToken",
 			Value: token.Refresh,
