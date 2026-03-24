@@ -54,7 +54,7 @@ jobs:
       - name: Scan Image
         uses: aquasecurity/trivy-action@0.35.0
         with:
-          image-ref: alimx07/${{ matrix.service }}/${{ github.sha }}
+          image-ref: alimx07/${{ matrix.service }}:${{ github.sha }}
           scan-type: 'image'
           scanners: 'vuln'
           severity: 'HIGH,CRITICAL'
