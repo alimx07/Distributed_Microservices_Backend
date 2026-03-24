@@ -1,0 +1,77 @@
+name: Deploy to Dev enviroment
+
+
+on:
+  push:
+    branches: [main] # PR Merged
+
+
+jobs:
+  detect:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix}}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - id: detect
+        run: |
+          SERVICES=()
+          for svc in api_gateway post_service feed_service user_service follow_service; do
+            if git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q "^services/${svc}/"; then
+              SERVICES+=("$svc")
+            fi
+            done
+            MATRIX=$(printf '%s\n' "${SERVICES[@]}" | jq -R . | jq -sc .)
+            echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+  build_push:
+    needs: [detect]
+    runs-on: ubuntu-latest
+    if: needs.detect.outputs.matrix != '[]'
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.matrix) }}
+    steps:
+      - name: k8s path
+        id: path
+        run: |
+          echo "k8s_path=k8s/$(echo ${{ matrix.service }}| tr '_' '-')" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            services/${{ matrix.service }}
+            ${{steps.path.outputs.k8s_path}}
+      - name: Build
+      - run: |
+            docker build -t alimx07/${{matrix.service}}:${{ github.sha }} services/${{ matrix.service }}
+      - name: Scan Image
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: alimx07/${{matrix.service}}/${{ github.sha }}
+          scan-type: 'image'
+          scanners: 'vuln'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+          format: 'table'
+
+      - name: Login to Docker
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Push Image
+        run: |
+          docker push alimx07/${{matrix.service}}:${{ github.sha }}
+      - name: Update manifests
+        run: |
+          sed -i "s|image: alimx07/${{ matrix.service }}:.*|image: alimx07/${{ matrix.service }}:${{ github.sha }}|" ${{steps.path.outputs.k8s_path}}/deployment.yaml
+      - name: Push to Repo
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "Service CI: update ${{matrix.service}} image to ${{ github.sha }} "
+          file_pattern: "k8s/*/deployment.yaml"
