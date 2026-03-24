@@ -205,7 +205,6 @@ func (g *GRPCInvoker) Invoke(ctx context.Context, conn *grpc.ClientConn, service
 		return nil, fmt.Errorf("method %s not found in service %s", methodName, serviceName)
 	}
 
-	// Create request message and unmarshal JSON
 	reqMsg := dynamicpb.NewMessage(md.inputDescriptor)
 	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err := unmarshaler.Unmarshal(requestJSON, reqMsg); err != nil {
@@ -213,14 +212,12 @@ func (g *GRPCInvoker) Invoke(ctx context.Context, conn *grpc.ClientConn, service
 		return nil, fmt.Errorf("failed to unmarshal request: %w", err)
 	}
 
-	// Create response message and invoke
 	respMsg := dynamicpb.NewMessage(md.outputDescriptor)
 	if err := conn.Invoke(ctx, md.fullMethodName, reqMsg, respMsg); err != nil {
 		log.Printf("gRPC call failed for %s: %v", md.fullMethodName, err)
 		return nil, fmt.Errorf("failed to invoke gRPC method: %w", err)
 	}
 
-	// Marshal response to JSON
 	marshaler := protojson.MarshalOptions{UseProtoNames: true}
 	responseJSON, err := marshaler.Marshal(respMsg)
 	if err != nil {

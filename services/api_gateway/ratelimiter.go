@@ -28,7 +28,7 @@ type KeyExtractor func(r *http.Request) string
 
 type Rule struct {
 	Limit      int `json:"limit"`      // bucket size
-	RefillRate int `json:"refillRate"` // requests/s
+	RefillRate int `json:"refillRate"` // requests/sec
 }
 
 type RateLimitInfo struct {
