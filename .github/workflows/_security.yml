@@ -45,7 +45,7 @@ jobs:
           sparse-checkout: |
             ${{ inputs.service_path }}
       - name: Run Trivy SCA
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'fs'
           scan-ref: ${{ inputs.service_path }}
