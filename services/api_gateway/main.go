@@ -92,6 +92,7 @@ func main() {
 	case err := <-errChan:
 		log.Println("Server Error: ", err.Error())
 	}
+
 	stop()
 
 	server.Close()
