@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -57,12 +58,17 @@ func (s *Server) addRoutes() {
 	}
 	// Health check endpoint
 	s.router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		var err error
 		if s.serviceOFF.Load() {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"status": "unhealth"}`))
+			_, err = w.Write([]byte(`{"status": "unhealthy"}`))
 		} else {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status": "healthy"}`))
+			_, err = w.Write([]byte(`{"status": "healthy"}`))
+		}
+		if err != nil {
+			log.Println("error while writing response header: ", err.Error())
+			http.Error(w, fmt.Sprintf("Error Writing Response Header: %v", err), http.StatusInternalServerError)
 		}
 	})
 }

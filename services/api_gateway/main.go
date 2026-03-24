@@ -68,7 +68,10 @@ func main() {
 		rateLimiter.close()
 		// grpcInvoker.close()
 		serviceConns.close()
-		redis.Close()
+		err := redis.Close()
+		if err != nil {
+			log.Println("Error Closing Redis Connection: ", err.Error())
+		}
 		log.Fatal("Failed to create handler")
 	}
 
