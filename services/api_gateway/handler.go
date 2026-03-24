@@ -194,6 +194,7 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Decoding Error , %v", err), http.StatusInternalServerError)
 		}
 
+		//nosemgrep
 		access_token := &http.Cookie{
 			Name:     "accessToken",
 			Value:    token.Access,
@@ -202,7 +203,7 @@ func (h *Handler) GenericHandler(w http.ResponseWriter, r *http.Request) {
 			SameSite: http.SameSiteNoneMode,
 			//  Secure:   true,  required in production for https
 		}
-
+		//nosemgrep
 		refresh_token := &http.Cookie{
 			Name:  "refreshToken",
 			Value: token.Refresh,

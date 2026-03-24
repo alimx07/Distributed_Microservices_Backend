@@ -16,3 +16,4 @@ COPY _proto/ ./_proto/
 
 EXPOSE 8080
 CMD ["./app"]
+
