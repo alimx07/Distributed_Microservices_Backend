@@ -96,5 +96,5 @@ func (s *Server) Close() {
 	// Close any open resources that controlled by handler
 	s.handler.close()
 
-	// Closed Finally
+	// Closed Finally :)
 }
