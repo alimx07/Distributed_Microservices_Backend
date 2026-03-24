@@ -133,7 +133,7 @@ func LoadAppConfig(filename string) (*models.AppConfig, error) {
 }
 
 // This func will validate token & make sure that it is not revoked
-// by check redis instance
+// by checking redis instance
 func ValidateToken(token string, pubKey []byte, r *redis.Client, luaScript string) (string, error) {
 	if len(pubKey) == 0 {
 		log.Println("Empty public key")
