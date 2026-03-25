@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: follow-service
+  namespace: dmb
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: follow-service
+  template:
+    metadata:
+      labels:
+        app: follow-service
+    spec:
+      containers:
+        - name: follow-service
+          image: alimx07/follow_service

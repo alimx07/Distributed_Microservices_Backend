@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+
+labels:
+  - pairs:
+      environment: production
+
+resources:
+  - api_gateway_patch/
+  - user_service_patch/
+  - post_service_patch/
+  - feed_service_patch/
+  - follow_service_patch/
+  - external_secrets_patch/

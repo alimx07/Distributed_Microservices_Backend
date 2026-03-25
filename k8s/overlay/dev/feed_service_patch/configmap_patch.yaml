@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feed-service-config
+  namespace: dmb
+data:
+  BOOTSTRAP_SERVERS: "b-1.tfdmbdevkafka.qqshsz.c8.kafka.eu-west-1.amazonaws.com,b-2.tfdmbdevkafka.qqshsz.c8.kafka.eu-west-1.amazonaws.com,b-3.tfdmbdevkafka.qqshsz.c8.kafka.eu-west-1.amazonaws.com"

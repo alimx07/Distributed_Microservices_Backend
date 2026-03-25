@@ -15,7 +15,4 @@ data:
   USER_SERVICE: "user-service:50051"
   FOLLOW_SERVICE: "follow-service:50071"
   KAFKA_TOPIC_PREFIX: "post_service"
-  BOOTSTRAP_SERVERS: "b-1.tfdmbdevkafka.qqshsz.c8.kafka.eu-west-1.amazonaws.com,b-2.tfdmbdevkafka.qqshsz.c8.kafka.eu-west-1.amazonaws.com,b-3.tfdmbdevkafka.qqshsz.c8.kafka.eu-west-1.amazonaws.com"
-
-
-# QUESTION : ARE URLs SECRETS OR NOT ?
+  # BOOTSTRAP_SERVERS is env-specific — set in each overlay

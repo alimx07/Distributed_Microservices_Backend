@@ -1,0 +1,75 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: userx-db-credentials
+  namespace: dmb
+spec:
+  dataFrom:
+    - extract:
+        key: tf-dmb-prod/userx/db-credentials
+
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: post-db-credentials
+  namespace: dmb
+spec:
+  dataFrom:
+    - extract:
+        key: tf-dmb-prod/post/db-credentials
+
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: follow-db-credentials
+  namespace: dmb
+spec:
+  dataFrom:
+    - extract:
+        key: tf-dmb-prod/follow/db-credentials
+
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: api-gateway-cache-credentials
+  namespace: dmb
+spec:
+  dataFrom:
+    - extract:
+        key: tf-dmb-prod/api-gateway/cache-credentials
+
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: post-cache-credentials
+  namespace: dmb
+spec:
+  dataFrom:
+    - extract:
+        key: tf-dmb-prod/post/cache-credentials
+
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: feed-cache-credentials
+  namespace: dmb
+spec:
+  dataFrom:
+    - extract:
+        key: tf-dmb-prod/feed/cache-credentials
+
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: userx-cache-credentials
+  namespace: dmb
+spec:
+  dataFrom:
+    - extract:
+        key: tf-dmb-prod/userx/cache-credentials

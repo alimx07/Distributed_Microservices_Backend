@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: alimx07/api_gateway:cd2cb72014d3c99ea85dc4ccf56036337d16eaaa
+          image: alimx07/api_gateway
           ports:
             - containerPort: 8080
           envFrom:
