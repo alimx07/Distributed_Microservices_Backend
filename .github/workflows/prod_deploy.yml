@@ -1,0 +1,72 @@
+name: Deploy to Prod enviroment
+
+# Current Assumptions:
+# We deploy first to Dev env
+# If we are good, tag this commit to deploy to prod. No manual approve required
+# TODO:
+# - Add Rollback strategy (For now git revet + argoCD used.)
+
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  detect:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Verify tag on main branch
+        run: | 
+           git branch -r --contains ${{ github.sha }} | grep -q "origin/main" || \                                                                                            
+           (echo "Tag is not on main branch" && exit 1)  
+
+      - id: detect
+        # EdgeCase: Check if prev tag found
+        # TODO: 
+        # Can this break: PREV_TAG=$(git tag --sort=-version:refname | sed -n '2p') ?
+        # With assumption that tags are commited in incremental way. we are good :)
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | sed -n '2p')
+          SERVICES=()
+          for svc in api_gateway post_service feed_service user_service follow_service; do
+            if [ -z "$PREV_TAG" ]; then
+              SERVICES+=("$svc")
+            elif git diff --name-only $PREV_TAG ${{ github.sha }} | grep -q "^services/${svc}/"; then
+              SERVICES+=("$svc")
+            fi
+          done
+          MATRIX=$(printf '%s\n' "${SERVICES[@]}" | jq -R . | jq -sc .)
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+  update_manifests:
+    needs: [detect]
+    runs-on: ubuntu-latest
+    if: needs.detect.outputs.matrix != '[""]'
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          sparse-checkout: |
+            k8s/overlay/prod/${{ matrix.service }}_patch
+
+      - name: Update prod manifests
+        run: |
+          sed -i "s|image: alimx07/${{ matrix.service }}[^ ]*|image: alimx07/${{ matrix.service }}:${{ github.sha }}|" k8s/overlay/prod/${{ matrix.service }}_patch/deployment_patch.yaml
+
+      - name: Push to Repo
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "Release: update ${{ matrix.service }} to ${{ github.sha }} (tag: ${{ github.ref_name }})"
+          file_pattern: "k8s/overlay/prod/*/deployment_patch.yaml"
