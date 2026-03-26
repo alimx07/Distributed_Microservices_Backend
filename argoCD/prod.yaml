@@ -8,9 +8,7 @@ spec:
   source:
     repoURL: https://github.com/alimx07/Distributed_Microservices_Backend.git
     targetRevision: main
-    path: k8s 
-    directory:
-      recurse: true
+    path: k8s/overlay/prod
   destination:
     server: https://kubernetes.default.svc
     namespace: dmb
