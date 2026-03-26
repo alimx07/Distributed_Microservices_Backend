@@ -15,7 +15,7 @@ jobs:
     outputs:
       matrix: ${{ steps.detect.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - id: detect
@@ -39,15 +39,15 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.detect.outputs.matrix) }}
     steps:
-      - name: k8s path
-        id: path
-        run: |
-          echo "k8s_path=k8s/$(echo ${{ matrix.service }}| tr '_' '-')" >> $GITHUB_OUTPUT
+      # - name: k8s path
+      #   id: path
+      #   run: |
+      #     echo "k8s_path=k8s/overlay/dev/$(echo ${{ matrix.service }})_patch" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             services/${{ matrix.service }}
-            ${{steps.path.outputs.k8s_path}}
+            k8s/overlay/dev/${{ matrix.service }}_patch
       - name: Build
         run: |
             docker build -t alimx07/${{matrix.service}}:${{ github.sha }} services/${{ matrix.service }}
@@ -71,9 +71,9 @@ jobs:
           docker push alimx07/${{ matrix.service }}:${{ github.sha }}
       - name: Update manifests
         run: |
-          sed -i "s|image: alimx07/${{ matrix.service }}:.*|image: alimx07/${{ matrix.service }}:${{ github.sha }}|" ${{steps.path.outputs.k8s_path}}/deployment.yaml
+          sed -i "s|image: alimx07/${{ matrix.service }}[^ ]*|image: alimx07/${{ matrix.service }}:${{ github.sha }}|" k8s/overlay/dev/${{ matrix.service }}_patch/deployment_patch.yaml
       - name: Push to Repo
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "Service CI: update ${{ matrix.service }} image to ${{ github.sha }} "
-          file_pattern: "k8s/*/deployment.yaml"
+          file_pattern: "k8s/overlay/dev/*/deployment_patch.yaml"
