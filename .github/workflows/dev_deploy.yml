@@ -15,7 +15,7 @@ jobs:
     outputs:
       matrix: ${{ steps.detect.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - id: detect
@@ -29,7 +29,7 @@ jobs:
             MATRIX=$(printf '%s\n' "${SERVICES[@]}" | jq -R . | jq -sc .)
             echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
-  build_push:
+  build_push: 
     needs: [detect]
     runs-on: ubuntu-latest
     if: needs.detect.outputs.matrix != '[""]'
@@ -57,7 +57,7 @@ jobs:
           image-ref: alimx07/${{ matrix.service }}:${{ github.sha }}
           scan-type: 'image'
           scanners: 'vuln'
-          severity: 'HIGH,CRITICAL'
+          severity: 'HIGH,CRITICAL,MEDIUM' # we can tune this by add some ignored vulns
           exit-code: '1'
           format: 'table'
 
@@ -68,10 +68,15 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Push Image
         run: |
+          docker tag alimx07/${{ matrix.service }}:${{ github.sha }} alimx07/${{ matrix.service }}:dev
           docker push alimx07/${{ matrix.service }}:${{ github.sha }}
+          docker push alimx07/${{ matrix.service }}:dev
       - name: Update manifests
         run: |
           sed -i "s|image: alimx07/${{ matrix.service }}[^ ]*|image: alimx07/${{ matrix.service }}:${{ github.sha }}|" k8s/overlay/dev/${{ matrix.service }}_patch/deployment_patch.yaml
+        # TODO: N parallel jobs try to push 
+        # Race condition or it is already handled ? 
+        # Overthink . Check Internals
       - name: Push to Repo
         uses: stefanzweifel/git-auto-commit-action@v7
         with:

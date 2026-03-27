@@ -1,0 +1,42 @@
+name: DAST
+
+on:
+    schedule:
+        # Run everyday at 2:00
+        # - cron: '0 2 * * *'
+jobs:
+    zap_scan:
+        # Basic DAST pipeline run against Dev enviroment
+        name: Scan my DMB
+        runs-on: ubuntu-latest
+        steps:
+            - name: ZAP Scan
+            #  Full scan will perform real attack
+            #  uses: uses: zaproxy/action-full-scan@v0.13.0
+              uses: zaproxy/action-baseline@0.15.0
+              with:
+                token: ${{ secrets.GITHUB_TOKEN }}
+                # This will be gateway endpoint
+                target: ${{ vars.DEV_URL }}
+                allow_issue_writing: true
+                issue_title: Security vulnerabilities in Dev Enviroment
+                artifact_name: zap_scan_dev_report
+                fail_action: true
+    trivy:
+      name: Scan my Images
+      runs-on: ubuntu-latest
+      permissions:
+        security-events: write 
+      strategy:
+        matrix:
+          service: [api_gateway , post_service , feed_service , user_service , follow_service]
+          version : [dev , latest]
+        fail-fast: false
+      steps:
+        - name: Scan ${{ matrix.service }} Image
+          uses: aquasecurity/trivy-action@0.35.0
+          with: 
+            image-ref: 'docker.io/alimx07/${{ matrix.service }}:${{ matrix.version }}'
+            format: 'table'
+            exit-code: '1'
+            severity: 'HIGH,CRITICAL,MEDIUM'

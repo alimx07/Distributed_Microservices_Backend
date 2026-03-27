@@ -20,7 +20,7 @@ jobs:
   golangci:
     name: Lint (${{ matrix.service }})
     needs: common
-    if: needs.common.outputs.matrix != '[]'
+    if: needs.common.outputs.matrix != '[""]'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -41,12 +41,12 @@ jobs:
   security:
     name: Security (${{ matrix.service }})
     needs: common
-    if: needs.common.outputs.matrix != '[]'
+    if: needs.common.outputs.matrix != '[""]'
     strategy:
       matrix:
         service: ${{ fromJson(needs.common.outputs.matrix) }}
       fail-fast: false
-    uses: ./.github/workflows/_security.yml
+    uses: ./.github/workflows/pre_security.yml
     with:
       service: ${{ matrix.service }}
       service_path: services/${{ matrix.service }}
@@ -55,7 +55,7 @@ jobs:
   test:
     name: Tests (${{ matrix.service }})
     needs: [common, golangci, security]
-    if: needs.common.outputs.matrix != '[]'
+    if: needs.common.outputs.matrix != '[""]'
     runs-on: ubuntu-latest
     strategy:
       matrix:

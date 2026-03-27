@@ -37,7 +37,8 @@ jobs:
           semgrep scan $CONFIG_FLAGS --error "$SCAN_PATH"
 
   trivy:
-    name: Trivy SCA (${{ inputs.service }})
+    # Security is everyone responsability
+    name: Trivy SCAN (${{ inputs.service }})
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -51,5 +52,17 @@ jobs:
           scan-ref: ${{ inputs.service_path }}
           scanners: 'vuln'
           severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+          format: 'table'
+      - name: Build Image
+        run: |
+            docker build -t alimx07/${{ inputs.service }}:${{ github.sha }} services/${{ inputs.service }}
+      - name: Scan Image
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: alimx07/${{ inputs.service }}:${{ github.sha }}
+          scan-type: 'image'
+          scanners: 'vuln'
+          severity: 'HIGH,CRITICAL' 
           exit-code: '1'
           format: 'table'
