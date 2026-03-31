@@ -1,11 +1,9 @@
 # Overview
 
-There’s a common saying in the industry that the first rule of microservices is: **don’t do microservices**. The idea is that if you can avoid the complexity, you probably should. In this repository, I do them anyway (even if it is just a mini example).
+<!-- There’s a common saying in the industry that the first rule of microservices is: **don’t do microservices**. The idea is that if you can avoid the complexity, you probably should. In this repository, I do them anyway (even if it is just a mini example). -->
 
 This Readme will be more like a blog, sharing notes, ideas and what I have done logically to create the project. not too much about the code.
 
-
-> **Note:** I started this project from scratch, with no prior experience in some of the technologies used. The design may not be perfect, but I’ve done my best with my current understanding.
 
 The process is incremental and consists of several stages:
 
@@ -13,15 +11,19 @@ The process is incremental and consists of several stages:
   - Design and implement the services.
 
 - Deployment on AWS EKS
-  - **Terraform**: Create the infrastructure.
-  - **Terragrunt**: Manage DEV and PROD environments.
+  - **Terraform & Terragrunt**: Create & manage the infra for DEV & PROD environments.
   - **CI Pipeline**
     - Run tests
-    - Build container images
+    - Build & Scan container images
     - Push images to registry
+    - SAST & DAST
   - **ArgoCD**
     - Enable GitOps-based deployment
 
+
+
+> Note: I started this project from scratch without prior experience in some of the technologies used, so the design might not be perfect. I built things based on what I know so far.
+In some areas (like SAST or image scanning), there could be more assumptions, discussions, and tuning of rules, but I didn’t go deep into that. I focused on getting things work for now.
 
 
 ## Services
@@ -37,6 +39,7 @@ The project is a social media platfrom includes multiple services from scratch w
 
 ## Table of Contents
 
+- [CI/CD](#cicd)
 - [API Gateway](#api-gateway)
   - [Rate Limiting](#rate-limiting)
   - [Auth](#auth)
@@ -73,6 +76,17 @@ The project is a social media platfrom includes multiple services from scratch w
 
 **INFRA DESIGN**
 ![Full Infra Design](images/infra.png)
+
+--------------------------------
+
+## CI/CD
+
+The pipelines right now cover four main triggers:
+
+- **PR Gate** :  Runs on every pull request: `secret scanning`, `lint & format checks`, `SAST (static analysis)`, `SCA`, `unit tests`, and `a pre-merge image scan`.
+- **Post Merge** : Runs after merging to main: `deeper image scanning`, `build & push images`, `update dev overlay manifests`, then ArgoCD do his own magic.
+- **Scheduled** : `DAST on DEV` & `Scan all images` stored in the registry (maybe untill prev N version).
+- **Tag** : `Pull image by SHA & retag`, `Manual Gate`, Update prod manifests (PROD READY :).
 
 --------------------------------
 
@@ -158,7 +172,7 @@ There are several algorithms for enforcing rate limits. One common approach is t
 
 #### Why Token Bucket ?
 
-There are different [RateLimiting algorithms](https://blog.algomaster.io/p/rate-limiting-algorithms-explained-with-code). Compared to the other popular rate limiting algorithms like **Leaky Bucket** and **Sliding Window**, the **Token Bucket** has clear pros for handling our users interactions (posts, likes, and comments).
+There are different [RateLimiting algorithms](https://blog.algomaster.io/p/rate-limiting-algorithms-explained-with-code). But, compared to the other popular rate limiting algorithms like **Leaky Bucket** and **Sliding Window**, the **Token Bucket** has clear pros for handling our users interactions (posts, likes, and comments) as: 
 
 - **Token Bucket**  
   The basic idea of the token bucket allows bursts of user activity up to the number of tokens available in the bucket within a time window, which means users can perform multiple actions quickly without being blocked, making it in other words *natural for our interactions*.
@@ -192,17 +206,9 @@ Even if we route all specific user requests so the same gateway. It is still a p
 
 
 
-So if there is a global state (every gateway will call) with a fast access, this would solve our problem. Fortunately, it is found it called **cache**
+So if there is a global state (every gateway will call) with a fast access, this would solve our problem. Fortunately, it is found it called **cache** (Redis in our Case).
 
-Redis (popular cache) will be used to provide:
-
-- **Shared global state** across all gateways
-- **High performance** suitable for fast checks (of course not as fast as in memory maps)
-- **High availability** through clustering
-- **Persistence** options for long-term limits
-
-
-#### Why Lua Scripts?
+#### Lua!!, Why Lua Scripts?
 
 We can use just plain redis commands (eg: SET , DEL) and other as found in the [REDIS_DOCS](https://redis.io/docs/latest/), so why Lua is mentioned at all ?
 
@@ -275,7 +281,7 @@ We can delete the refresh token, but any existing JWT is still valid until it ex
 
 So if the JWT has 8 minutes left, the attacker keeps access for 8 minutes. That’s not great.
 
-The common fix is having a **revocation list** (a store that keeps track of invalid JWTs). But once you do that, you’re checking a stateful store on each request again. At that point, it’s not very different from session IDs, except JWTs are bigger and carry more bandwidth overhead.
+The common fix is having a **revocation list** (a store that keeps track of invalid JWTs). But once you do that, you’re checking a stateful store on each request again. At that point, it’s not very different from session IDs when you have only one single entry point to your app, except JWTs are bigger and carry more bandwidth overhead.
 
 > We can store revoked IDs in a global cache again.
 
@@ -429,9 +435,9 @@ HTTP Response -> Client
 
 Now we actually hit the end of our path, but there’s still a small topic: **LOAD BALANCING**.
 
-In the API Gateway, instead of manually maintaining connections to each service instance, we rely on **K8s Services**. When we deploy our microservices to k8s, each service gets a stable DNS name and a **ClusterIP** that automatically load balances traffic across all its pods. The API Gateway only needs to send requests to the service name; **Kube-proxy** handles routing them to available pods.  
+In the API Gateway, instead of manually maintaining connections to each service instance, we rely on **K8s Services**. When we deploy our microservices to k8s, each service gets a stable DNS name and a **ClusterIP** that automatically load balances traffic across all its pods. The API Gateway only needs to send requests to the service name; **Kube-proxy** handles the rest.  
 
-This removes the need for a separate **service registry** like etcd. K8s automatically keeps track of which pods are running and ensures requests are routed correctly. As a result, the API Gateway doesn’t need to implement round-robin or maintain a list of instances. it simply connects to the k8s service, and k8s takes care of distributing requests.  
+This removes the need for a separate **service registry** like etcd (which have be done before by me). K8s automatically keeps track of which pods are running and ensures requests are routed correctly. As a result, the API Gateway doesn’t need to implement round-robin or maintain a list of instances.
 
 ## Post Service
 
@@ -441,7 +447,8 @@ Now it's time to talk about Services. I will start with **POST SERVICE**. Basica
 
 As shown in the first figure, the post service talks to a Postgres database and cache. In deployment, I use **Amazon RDS** with **one primary and one read replica**. RDS handles replication, failover, and backups automatically, so we don’t need to configure replication manually.
 
-> **NOTE:** If you were setting up Postgres yourself, you could implement replication manually using a replication user, physical replication slots, and WAL streaming. This section below shows how that would work for educational purposes.
+
+If you were setting up Postgres yourself, you could implement replication manually using a replication user, physical replication slots, and WAL streaming. This section below shows how that would work for educational purposes.
 
 ### Manual Replication
 
@@ -610,7 +617,7 @@ GRANT SELECT ON TABLE public.posts TO logical_rep;
         "database.hostname": "postgres_primary",
         "database.port": "5432",
         "database.user": "logical_rep",
-        "database.password": "YOUR_PASSWORD",
+        "database.password": "HOWAREYOU?",
         "database.dbname" : "postdb",
         "topic.prefix": "post_service" ,
         "key.converter": "org.apache.kafka.connect.json.JsonConverter",
@@ -814,22 +821,22 @@ Now that the code and design phases are behind us, it’s time to focus on build
 ## Terraform & Terragrunt
 
 > NOTE: I will not go deep into the Terraform code. 
-> It’s mostly modules built by using Terraform resources based on the official docs , which is honestly very well good.
+> It’s mostly modules built by using Terraform resources from scratch based on the official docs , which is honestly very well good.
 
 I think most people know **Terraform** by now.  
 In simple words: you describe your infra in code (HCL), and Terraform provisions it for you and No more clicking around in the console.
 
 Terraform is declarative(like SQL. say what you need not how exactly steps to do it), and it keeps a **state**.  
-You can think about the state like memory a for your infra. It knows what exists, what changed, and what should be updated, and if something drift you can rollback to your desired state easily. When you work in a team, that state helps prevent conflicts and keeps everything consistent.
+You can think about the state like memory a for your infra. It knows what exists, what changed, and what should be updated, and if something drift you can rollback to your desired state easily. 
 
 Beside Terraform, I use **Terragrunt**.
 
 > Terragrunt is just a thin wrapper around Terraform.
 
-So… why Terragrunt? Isn’t Terraform enough?
+#### So… why Terragrunt? Isn’t Terraform enough?
 
 Honestly, Terraform *is* enough in many situations.  
-Until you start working with multiple environments.
+Until you start working with multiple environments (which I simulate here).
 
 When you have `dev`, `staging`, and `prod`, most of the infrastructure is almost the same. Maybe 95% identical.  
 Only small things change (instance types, scaling configs, number of replicas, etc.)
@@ -931,26 +938,6 @@ Inside a VPC, we have subnets.
 
 In my setup, I create **three subnets in every availability zone**.
 
-### What is an Availability Zone?
-
-To understand AZs, let’s start with regions.
-
-Cloud providers have **regions**.  
-A region is basically a group of data centers in a specific geographic location.
-
-Inside every region, there are multiple **Availability Zones (AZs)**.
-
-An AZ is a physically separate data center inside the same region.  
-They are isolated from each other for HA.
-
-So even though they belong to the same region, they are not all in one building or one location.
-```
-Example:
-  Regoin : UK
-    AZ1: London
-    AZ2: Manchester
-```
-
 
 ### Public Subnet
 
@@ -1009,7 +996,10 @@ Anything that should **NOT** be directly accessible from the internet goes here:
 > Sometimes databases even get their own dedicated subnet group,  but for now, I keep everything private inside private subnets.
 
 
-#### Infra Subnet
+### Infra Subnet
+
+> TODO: Write more on it.
+
 
 The third subnet in my design is the **Infra subnet**.
 
@@ -1024,7 +1014,7 @@ I use it to host the EKS control plane components. Keeping it separate gives bet
 - **Safer changes**  
   If Terraform changes require subnet recreation, isolating the infra subnet reduces the risk of impacting the whooole cluster.
 
-This is a good blog about this : [Enhanced VPC flexibilty](https://aws.amazon.com/blogs/containers/enhanced-vpc-flexibility-modify-subnets-and-security-groups-in-amazon-eks/)
+<!-- This is a good blog about this : [Enhanced VPC flexibilty](https://aws.amazon.com/blogs/containers/enhanced-vpc-flexibility-modify-subnets-and-security-groups-in-amazon-eks/) -->
 
 
 ## EKS & NODES
@@ -1054,14 +1044,9 @@ To understand the flow, let’s walk through what happens when a pod is schedule
    - configs networking inside the namespace
 6. The plugin returns the result to the container runtime, and the Pod networking is readyyyyyyyyyy.
 
-Another important thing about K8s networking:
+Another important thing about K8s networking: every Pod can communicate with every other Pod, They can see each other , again, Thanks for CNI plugins.
 
-By design, **every Pod can communicate with every other Pod**, even if they are running on different nodes.
-
-CNI plugins make this possible.  
-They handle routing, forwarding rules, and sometimes encapsulation (like overlay networking solutions `flannel`) or using more advanced tech like eBPF `Cilium`.
-
-> NOTE: When creating IRSA for the AWS CNI, make sure the Service Account in the IAM trust policy matches `kube-system:aws-node`. If it doesn’t match , the cni will not work ,this mistake was literally very hard to debug `at least for me`.
+<!-- > NOTE: When creating IRSA for the AWS CNI, make sure the Service Account in the IAM trust policy matches `kube-system:aws-node`. If it doesn’t match , the cni will not work ,this mistake was literally very hard to debug `at least for me`. -->
 
 
 ### External Secrets Operator
@@ -1070,7 +1055,7 @@ The role of ESO (External Secrets Operator) is simple.
 
 It syncs and retrieves secrets from an external provider, then creates or updates K8s Secrets for you.
 
-But,why do we even need that?
+#### But,why do we even need that?
 
 In real environments, you don’t want to store secrets directly inside your cluster or inside Git.  
 You usually keep them in a dedicated secret manager like AWS Secrets Manager.
@@ -1081,8 +1066,6 @@ Those systems are built for:
 - Access control (ex: IAM) 
 - Rotation (change secrets every N days)
 
-K8s Secrets alone are not enough for that level of security and you don`t want to rotate secrets manually.
-
 ![ESO](images/eso.png)
 So how does ESO work?
 
@@ -1090,6 +1073,10 @@ The flow is straightforward:
 
 1. You store your secret in an external provider.
 2. Inside K8s, you define:
+
+**THIS IS VERY IMPORTANT** : 
+> It is your responsibility (and your service logic) to decide whether secrets should be reflected in running pods or not. Currently, I pass secrets as ENV Vars, so if a new secret is updated (ESO) while the pod is running, it will still using the old value. Another way to do that, is to pass secrets (or configs) through a mount path inside the pod. In that case, updates are reflected immediately, and it is now for your service code to reload the updated secret when needed (for example, before handling a request).
+
    - A `SecretStore` or `ClusterSecretStore` → tells ESO how to authenticate with the external provider.
 ```yaml
 apiVersion: external-secrets.io/v1
@@ -1140,17 +1127,6 @@ Instead of serving a temporary HTTP file, DNS-01 works by:
 Cert-manager handles all of using DNS provider credentials. After that, certs are stored as k8s Secrets and auto renewed before expire.
 
 
-### ArgoCD
-
-Finally, for deployments I use **ArgoCD**.
-
-The idea is simple: Git is the source of truth. So , I push my manifests (k8s yaml) to a Git repository and ArgoCD continuously watches that repo (CD).
-
-If something changes in Git:
-
-- ArgoCD detects the difference  
-- Compares desired state (Git) vs current state (cluster)  
-- Applies the changes automatically  
 
 
 ### IRSA: Too Much Permissions
