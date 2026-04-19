@@ -57,16 +57,10 @@ resource "aws_eip" "EIPs" {
 
 
 resource "aws_nat_gateway" "NATs" {
-    count = local.nat_gateways_num
-    allocation_id = local.nat_gateways_num > 1 ? element(aws_eip.EIPs[*].id , count.index) : null
-    availability_mode = local.nat_gateways_num > 1 ? "zonal" : "regional"
-    vpc_id = local.nat_gateways_num > 1 ?  null : aws_vpc.this.id
-    subnet_id = local.nat_gateways_num > 1 ? element(aws_subnet.public_subnets[*].id , count.index) : null 
-    availability_zone_address {
-      allocation_ids = local.nat_gateways_num > 1 ? null : aws_eip.EIPs[*].id 
-      availability_zone_id = local.nat_gateways_num >1 ? null : data.aws_availability_zones.azs.id
-    }
-    tags = local.default_tags
+    count         = local.nat_gateways_num
+    allocation_id = element(aws_eip.EIPs[*].id, count.index)
+    subnet_id     = element(aws_subnet.public_subnets[*].id, count.index)
+    tags          = local.default_tags
 }
 
 
