@@ -1,0 +1,32 @@
+repos:
+  - id: github.com/alimx07/Distributed_Microservices_Backend
+
+    # generate atlantis.yaml
+    pre_workflow_hooks:
+      - run: |
+          terragrunt-atlantis-config generate \
+            --root . \
+            --output atlantis.yaml \
+            --autoplan \
+            --create-workspace \
+            --preserve-projects \
+            --parallel
+
+    apply_requirements:
+      - approved
+      - mergeable
+
+    workflow: terragrunt
+    allowed_overrides:
+      - workflow
+      - apply_requirements
+    allow_custom_workflows: true
+
+workflows:
+  terragrunt:
+    plan:
+      steps:
+        - run: terragrunt plan -out $PLANFILE
+    apply:
+      steps:
+        - run: terragrunt apply $PLANFILE
