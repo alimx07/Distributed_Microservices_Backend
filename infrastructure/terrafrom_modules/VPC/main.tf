@@ -97,6 +97,7 @@ resource "aws_subnet" "infra_subnets" {
     availability_zone = element(local.azs , count.index)
     cidr_block = cidrsubnet(aws_vpc.this.cidr_block , var.cidr_subnet_mask , count.index + (2*length(local.azs)))
     tags = local.default_tags
+
     
 }
 
