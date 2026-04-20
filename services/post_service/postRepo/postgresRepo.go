@@ -2,11 +2,9 @@ package postRepo
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
-	"fmt"
 	"log"
-	"math/rand"
-	"strings"
 	"time"
 
 	"github.com/alimx07/Distributed_Microservices_Backend/services/post_service/models"
@@ -28,7 +26,7 @@ func NewPostgresRepo(primaryDB, replicaDB *sql.DB) *PostgresRepo {
 
 // Write operations use primaryDB
 func (ps *PostgresRepo) CreatePost(ctx context.Context, post models.Post) (string, error) {
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+	entropy := ulid.Monotonic(rand.Reader, 0)
 	postID := ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
 	_, err := ps.primaryDB.ExecContext(ctx,
 		`INSERT INTO posts (post_id , user_id, content) 
@@ -42,7 +40,7 @@ func (ps *PostgresRepo) CreatePost(ctx context.Context, post models.Post) (strin
 }
 
 func (ps *PostgresRepo) CreateComment(ctx context.Context, comment models.Comment) (string, error) {
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+	entropy := ulid.Monotonic(rand.Reader, 0)
 	commentID := ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
 	_, err := ps.primaryDB.ExecContext(ctx,
 		`INSERT INTO comments (comment_id , user_id, post_id ,content) 
@@ -110,7 +108,11 @@ func (ps *PostgresRepo) GetPosts(ctx context.Context, ids []string) ([]models.Po
 		log.Println("Error querying posts: ", err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("Error closing posts rows:", err)
+		}
+	}()
 
 	posts := make([]models.Post, 0, len(ids))
 	for rows.Next() {
@@ -137,7 +139,11 @@ func (ps *PostgresRepo) GetComments(ctx context.Context, id string) ([]models.Co
 		log.Println("Error querying comments: ", err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("Error closing comments rows:", err)
+		}
+	}()
 
 	var comments []models.Comment
 	for rows.Next() {
@@ -158,7 +164,11 @@ func (ps *PostgresRepo) GetLikes(ctx context.Context, id string) ([]models.Like,
 		log.Println("Error querying likes: ", err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("Error closing likes rows:", err)
+		}
+	}()
 
 	var likes []models.Like
 	for rows.Next() {
@@ -184,7 +194,11 @@ func (ps *PostgresRepo) GetCounters(ctx context.Context, ids []string) ([]models
 		log.Println("Error querying posts: ", err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("Error closing counters rows:", err)
+		}
+	}()
 
 	cnts := make([]models.CachedCounter, 0, len(ids))
 	for rows.Next() {
@@ -206,16 +220,21 @@ func (ps *PostgresRepo) GetCounters(ctx context.Context, ids []string) ([]models
 
 // Write operation - uses primaryDB
 func (ps *PostgresRepo) UpdateCounters(ctx context.Context, counters []models.CachedCounter) error {
-	values := make([]string, 0, len(counters))
-	for _, cnt := range counters {
-		values = append(values, fmt.Sprintf("(%d,%d,%d)", cnt.Id, cnt.Likes, cnt.Comments))
+	ids := make([]string, len(counters))
+	likes := make([]int64, len(counters))
+	comments := make([]int64, len(counters))
+	for i, cnt := range counters {
+		ids[i] = cnt.Id
+		likes[i] = cnt.Likes
+		comments[i] = cnt.Comments
 	}
-	query := fmt.Sprintf(`UPDATE posts p SET 
-                        likes_count = p.likes_count + v.likes, 
-                        comments_count = p.comments_count + v.comments
-                        FROM (VALUES %s) AS v(post_id, likes, comments) 
-                        WHERE v.post_id = p.post_id`, strings.Join(values, ","))
-	_, err := ps.primaryDB.ExecContext(ctx, query)
+	_, err := ps.primaryDB.ExecContext(ctx, `
+		UPDATE posts p SET
+			likes_count    = p.likes_count    + v.likes,
+			comments_count = p.comments_count + v.comments
+		FROM unnest($1::text[], $2::bigint[], $3::bigint[]) AS v(post_id, likes, comments)
+		WHERE p.post_id = v.post_id`,
+		pq.Array(ids), pq.Array(likes), pq.Array(comments))
 	if err != nil {
 		log.Printf("Error In updating Counters: %v", err.Error())
 		return err

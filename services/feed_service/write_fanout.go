@@ -84,7 +84,9 @@ func (fw *FanoutWriter) WriteFanout() {
 					if err != nil {
 						log.Println("Error Processing Message", err.Error())
 					} else {
-						fw.c.Commit()
+						if _, err := fw.c.Commit(); err != nil {
+							log.Println("Error committing kafka offset:", err)
+						}
 					}
 				}()
 			case kafka.Error:
@@ -107,7 +109,9 @@ func (fw *FanoutWriter) ProcessMessage(msg *kafka.Message) error {
 	defer c1()
 	celeb, _ := fw.followClient.IsCeleb(ctx, item.UserId)
 	if celeb {
-		fw.cache.Set(item)
+		if err := fw.cache.Set(item); err != nil {
+			log.Println("Error setting cache item:", err)
+		}
 		return nil
 	}
 	ctx2, c2 := context.WithTimeout(fw.ctx, 5*time.Second)
@@ -124,11 +128,13 @@ func (fw *FanoutWriter) ProcessMessage(msg *kafka.Message) error {
 		go func(ids []string) {
 			defer wg.Done()
 			for _, id := range ids {
-				fw.cache.Set(models.FeedItem{
+				if err := fw.cache.Set(models.FeedItem{
 					UserId:     id,
 					PostId:     item.PostId,
 					Created_at: item.Created_at,
-				})
+				}); err != nil {
+					log.Println("Error setting cache item:", err)
+				}
 			}
 		}(followers[i:endIdx])
 		atomic.AddInt32(&i, int32(fw.workerThreshold))
