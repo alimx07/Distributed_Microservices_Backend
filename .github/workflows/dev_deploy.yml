@@ -51,6 +51,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          ref: main
           sparse-checkout: |
             services/${{ matrix.service }}
             k8s/overlay/dev/${{ matrix.service }}_patch
