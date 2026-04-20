@@ -2,10 +2,11 @@ name: Deploy to Prod enviroment
 
 # Current Assumptions:
 # We deploy first to Dev env
-# If we are good, tag this commit to deploy to prod. No manual approve required
-# TODO:
-# - Add Rollback strategy (For now git revet + argoCD used.)
-
+# If we are good, Deploy to Prod with manual gate approve
+# We will verify the rollout for just pipeline correctness purpose / Alert
+# k8s rollout strategy will handle zero downtime if new pods crashes
+# If we need rollback : revert + ArgoCD / ArgoCD UI + sync
+# Naive stratiges untill now
 
 on:
   push:
@@ -23,15 +24,12 @@ jobs:
         with:
           fetch-depth: 0
       - name: Verify tag on main branch
-        run: | 
-           git branch -r --contains ${{ github.sha }} | grep -q "origin/main" || \                                                                                            
-           (echo "Tag is not on main branch" && exit 1)  
+        run: |
+           git branch -r --contains ${{ github.sha }} | grep -q "origin/main" || \
+           (echo "Tag is not on main branch" && exit 1)
 
       - id: detect
-        # EdgeCase: Check if prev tag found
-        # TODO: 
-        # Can this break: PREV_TAG=$(git tag --sort=-version:refname | sed -n '2p') ?
-        # With assumption that tags are commited in incremental way. we are good :)
+        # EdgeCase: What if this is first Tag (Handled)
         run: |
           PREV_TAG=$(git tag --sort=-version:refname | sed -n '2p')
           SERVICES=()
@@ -48,7 +46,7 @@ jobs:
   update_manifests:
     needs: [detect]
     runs-on: ubuntu-latest
-    environment: Production 
+    environment: Production
     if: needs.detect.outputs.matrix != '[""]'
     permissions:
       contents: write
@@ -61,22 +59,44 @@ jobs:
           ref: main
           sparse-checkout: |
             k8s/overlay/prod/${{ matrix.service }}_patch
-
-      - name: Update prod manifests
-        run: |
-          sed -i "s|image: alimx07/${{ matrix.service }}[^ ]*|image: alimx07/${{ matrix.service }}:${{ github.sha }}|" k8s/overlay/prod/${{ matrix.service }}_patch/deployment_patch.yaml
-      - name: Login to Docker
+            
+      - name : Login Docker
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Push Image
+          username: ${{ inputs.username }}
+          password: ${{ inputs.password }}
+
+      - name: Retag and push latest
         run: |
           docker pull alimx07/${{ matrix.service }}:${{ github.sha }}
           docker tag alimx07/${{ matrix.service }}:${{ github.sha }} alimx07/${{ matrix.service }}:latest
           docker push alimx07/${{ matrix.service }}:latest
-      - name: Push to Repo
-        uses: stefanzweifel/git-auto-commit-action@v7
+
+      - uses: ./.github/actions/commit-manifest
         with:
+          service: ${{ matrix.service }}
+          sha: ${{ github.sha }}
+          overlay: prod
           commit_message: "Release: update ${{ matrix.service }} to ${{ github.sha }} (tag: ${{ github.ref_name }})"
-          file_pattern: "k8s/overlay/prod/*/deployment_patch.yaml"
+
+  verify_rollout:
+    name: Verify Rollout in Cluster
+    needs: [update_manifests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd \
+            https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
+      - name: Wait for ArgoCD sync and health
+        run: |
+          argocd app wait dmb-prod \
+            --sync \
+            --health \
+            --timeout 600
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+          ARGOCD_OPTS: "--grpc-web"

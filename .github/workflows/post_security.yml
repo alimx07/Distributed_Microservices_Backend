@@ -3,7 +3,7 @@ name: DAST
 on:
     schedule:
         # Run everyday at 2:00
-        # - cron: '0 2 * * *'
+        - cron: '0 2 * * *'
 jobs:
     zap_scan:
         # Basic DAST pipeline run against Dev enviroment

@@ -1,0 +1,25 @@
+name: Update Manifest and Commit
+description: Update deployment image tag and auto-commit the manifest
+
+inputs:
+  service:
+    required: true
+  sha:
+    required: true
+  overlay:
+    required: true  # dev or prod
+  commit_message:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Update image tag
+      shell: bash
+      run: |
+        sed -i "s|image: alimx07/${{ inputs.service }}[^ ]*|image: alimx07/${{ inputs.service }}:${{ inputs.sha }}|" \
+          k8s/overlay/${{ inputs.overlay }}/${{ inputs.service }}_patch/deployment_patch.yaml
+    - uses: stefanzweifel/git-auto-commit-action@v7
+      with:
+        commit_message: ${{ inputs.commit_message }}
+        file_pattern: "k8s/overlay/${{ inputs.overlay }}/*/deployment_patch.yaml"
