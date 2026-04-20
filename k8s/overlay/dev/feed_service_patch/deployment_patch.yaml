@@ -15,4 +15,4 @@ spec:
     spec:
       containers:
         - name: feed-service
-          image: alimx07/feed_service
+          image: alimx07/feed_service:f3db6b7fbea722f51797067be575d2cf1c864a9f
