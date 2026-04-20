@@ -58,14 +58,18 @@ func (rs *redisRepo) UpdateLikesCounter(ctx context.Context, id string, delta in
 	pipe := rs.redisClient.Pipeline()
 	pipe.HIncrBy(ctx, counterKey(id), "likes", delta)
 	pipe.SAdd(ctx, "counters:set", counterKey(id))
-	pipe.Exec(ctx)
+	if _, err := pipe.Exec(ctx); err != nil {
+		log.Println("Error executing likes counter pipeline:", err)
+	}
 }
 
 func (rs *redisRepo) UpdateCommentsCounter(ctx context.Context, id string, delta int64) {
 	pipe := rs.redisClient.Pipeline()
 	pipe.HIncrBy(ctx, counterKey(id), "comments", delta)
 	pipe.SAdd(ctx, "counters:set", counterKey(id))
-	pipe.Exec(ctx)
+	if _, err := pipe.Exec(ctx); err != nil {
+		log.Println("Error executing comments counter pipeline:", err)
+	}
 }
 
 func (rs *redisRepo) GetPosts(ctx context.Context, ids []string) ([]models.Post, error) {
@@ -238,7 +242,9 @@ func (rs *redisRepo) SyncCounters() {
 					}
 					cnts = append(cnts, cachedcounter)
 				}
-				rs.presistanceDB.UpdateCounters(rs.ctx, cnts)
+				if err := rs.presistanceDB.UpdateCounters(rs.ctx, cnts); err != nil {
+					log.Println("Error flushing counters to DB:", err)
+				}
 			}
 		}
 	}

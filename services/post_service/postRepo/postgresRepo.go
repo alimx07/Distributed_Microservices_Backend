@@ -108,7 +108,11 @@ func (ps *PostgresRepo) GetPosts(ctx context.Context, ids []string) ([]models.Po
 		log.Println("Error querying posts: ", err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("Error closing posts rows:", err)
+		}
+	}()
 
 	posts := make([]models.Post, 0, len(ids))
 	for rows.Next() {
@@ -135,7 +139,11 @@ func (ps *PostgresRepo) GetComments(ctx context.Context, id string) ([]models.Co
 		log.Println("Error querying comments: ", err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("Error closing comments rows:", err)
+		}
+	}()
 
 	var comments []models.Comment
 	for rows.Next() {
@@ -156,7 +164,11 @@ func (ps *PostgresRepo) GetLikes(ctx context.Context, id string) ([]models.Like,
 		log.Println("Error querying likes: ", err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("Error closing likes rows:", err)
+		}
+	}()
 
 	var likes []models.Like
 	for rows.Next() {
@@ -182,7 +194,11 @@ func (ps *PostgresRepo) GetCounters(ctx context.Context, ids []string) ([]models
 		log.Println("Error querying posts: ", err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Println("Error closing counters rows:", err)
+		}
+	}()
 
 	cnts := make([]models.CachedCounter, 0, len(ids))
 	for rows.Next() {

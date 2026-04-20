@@ -43,7 +43,7 @@ func (uc *UserClient) GetUsersData(ctx context.Context, ids []string) (map[strin
 
 func (uc *UserClient) Close() error {
 	if uc.conn != nil {
-		uc.conn.Close()
+		return uc.conn.Close()
 	}
 	return nil
 }

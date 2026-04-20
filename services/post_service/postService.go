@@ -214,10 +214,14 @@ func (ps *postService) StartHealthServer() error {
 
 		if ps.serviceOFF.Load() {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"status": "down" , service": "post_service"}`))
+			if _, err := w.Write([]byte(`{"status": "down" , service": "post_service"}`)); err != nil {
+				log.Println("health write error:", err)
+			}
 		} else {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status": "ok" , service": "post_service"}`))
+			if _, err := w.Write([]byte(`{"status": "ok" , service": "post_service"}`)); err != nil {
+				log.Println("health write error:", err)
+			}
 		}
 
 	})

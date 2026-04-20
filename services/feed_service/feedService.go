@@ -226,10 +226,14 @@ func (fs *FeedService) StartHealthServer() error {
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		if fs.serviceOFF.Load() {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"status": "Down" , "service": "feed_service"}`))
+			if _, err := w.Write([]byte(`{"status": "Down" , "service": "feed_service"}`)); err != nil {
+				log.Println("health write error:", err)
+			}
 		} else {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status": "ok" , "service": "feed_service"}`))
+			if _, err := w.Write([]byte(`{"status": "ok" , "service": "feed_service"}`)); err != nil {
+				log.Println("health write error:", err)
+			}
 		}
 	})
 
