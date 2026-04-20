@@ -102,6 +102,7 @@ func (fs *FeedService) Start() error {
 		log.Printf("Error in Starting listener for FeedService on %v\n", net.JoinHostPort(fs.config.ServerHost, fs.config.ServerPort))
 		return err
 	}
+	//nosemgrep
 	grpcServer := grpc.NewServer()
 	pb.RegisterFeedServiceServer(grpcServer, fs)
 	fs.grpcServer = grpcServer

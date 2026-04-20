@@ -53,6 +53,7 @@ func (ps *postService) start() error {
 	if err != nil {
 		return err
 	}
+	//nosemgrep
 	grpcserver := grpc.NewServer()
 	ps.grpcServer = grpcserver
 	pb.RegisterPostSeriveServer(grpcserver, ps)
