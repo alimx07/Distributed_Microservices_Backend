@@ -15,4 +15,4 @@ spec:
     spec:
       containers:
         - name: post-service
-          image: alimx07/post_service
+          image: alimx07/post_service:e47434c0ec47e2e8d10ecf17f22a6847e969cace
