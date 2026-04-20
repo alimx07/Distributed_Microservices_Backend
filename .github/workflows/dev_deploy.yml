@@ -47,6 +47,7 @@ jobs:
     strategy:
       matrix:
         service: ${{ fromJson(needs.detect.outputs.matrix) }}
+      max-parallel: 1
     steps:
       - uses: actions/checkout@v6
         with:
