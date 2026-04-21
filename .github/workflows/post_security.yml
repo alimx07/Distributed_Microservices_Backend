@@ -3,7 +3,9 @@ name: DAST
 on:
     schedule:
         # Run everyday at 2:00
-        - cron: '0 2 * * *'
+        # - cron: '0 2 * * *'
+        # This to prevent dialy run
+        - cron: '0 2 1 1 *'
 jobs:
     zap_scan:
         # Basic DAST pipeline run against Dev enviroment
@@ -12,8 +14,8 @@ jobs:
         steps:
             - name: ZAP Scan
             #  Full scan will perform real attack
-            #  uses: uses: zaproxy/action-full-scan@v0.13.0
-              uses: zaproxy/action-baseline@0.15.0
+              uses: zaproxy/action-full-scan@v0.13.0
+              # uses: zaproxy/action-baseline@0.13.0
               with:
                 token: ${{ secrets.GITHUB_TOKEN }}
                 # This will be gateway endpoint
