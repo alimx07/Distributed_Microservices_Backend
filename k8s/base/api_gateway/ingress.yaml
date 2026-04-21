@@ -7,15 +7,8 @@ spec:
   rules:
     - http:
         paths:
-          - path: /api
+          - path: /
             pathType: Prefix
-            backend:
-              service:
-                name: api-gateway
-                port:
-                  number: 8080
-          - path: /health
-            pathType: Exact
             backend:
               service:
                 name: api-gateway

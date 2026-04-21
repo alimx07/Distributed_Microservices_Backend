@@ -15,4 +15,3 @@ data:
   USER_SERVICE: "user-service:50051"
   FOLLOW_SERVICE: "follow-service:50071"
   KAFKA_TOPIC_PREFIX: "post_service"
-  # BOOTSTRAP_SERVERS is env-specific — set in each overlay

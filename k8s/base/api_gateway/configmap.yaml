@@ -6,4 +6,5 @@ metadata:
 data:
   SERVER_HOST: "0.0.0.0"
   SERVER_PORT: "8080"
+  # Just Make change to code
   PUBLIC_KEY_ADDR: "http://user-service:8080/public-key"
